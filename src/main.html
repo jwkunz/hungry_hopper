@@ -47,6 +47,8 @@
 			physics_friction: 0.4,
 			physics_bounce: 0.6,
 			physics_gravity: 1.0,
+			hit_sound_speed: 5,
+			squash_sound_speed: 20,
 		}
 
 		var box_1 = {
@@ -91,8 +93,12 @@
 		}
 
 		function init_all() {
+			// Window size
+
 			globals.canvas_width = math.round(window.innerWidth)
 			globals.canvas_height = math.round(window.innerHeight * 0.75)
+
+			// Size calculations
 
 			largest_dim = math.max(globals.canvas_width, globals.canvas_height)
 			globals.button_width = math.round(largest_dim / 20)
@@ -100,15 +106,21 @@
 			box_1.width = math.round(largest_dim / 50)
 			box_1.height = math.round(largest_dim / 50)
 
+			// Background
+
 			document.getElementById("viewport").setAttribute('width', globals.canvas_width)
 			document.getElementById("viewport").setAttribute('height', globals.canvas_height)
+
+			draw_obj({ color: globals.background, type: "box", p_x: 0, p_y: 0, width: globals.canvas_width, height: globals.canvas_height })
+
+			// Buttons
 
 			document.getElementById("button_up").style.position = "absolute"
 			document.getElementById("button_up").style.left = (globals.canvas_width / 2 - globals.button_width / 2).toString() + 'px'
 			document.getElementById("button_up").style.top = (globals.canvas_height + globals.button_height).toString() + 'px'
 			document.getElementById("button_up").style.width = (globals.button_width).toString() + 'px'
 			document.getElementById("button_up").style.height = (globals.button_height).toString() + 'px'
-			document.getElementById("button_up").setAttribute('onclick', "move_obj(mario_sprite,0,-1)")
+			document.getElementById("button_up").setAttribute('onclick', "bounce_sound(); move_obj(mario_sprite,0,-1)")
 
 			document.getElementById("button_left").style.position = "absolute"
 			document.getElementById("button_left").style.left = (globals.canvas_width / 2 - globals.button_width).toString() + 'px'
@@ -131,13 +143,46 @@
 			document.getElementById("button_down").style.height = (globals.button_height).toString() + 'px'
 			document.getElementById("button_down").setAttribute('onclick', "move_obj(mario_sprite,0,1)")
 
+			// Mario Sprite
 			mario_sprite.current_state = mario_sprite.states.right
-
-			draw_obj({ color: globals.background, type: "box", p_x: 0, p_y: 0, width: globals.canvas_width, height: globals.canvas_height })
 			draw_obj(mario_sprite)
 
+			// Bounce sound
+			this.sound_boing = document.createElement("audio")
+			this.sound_boing.src = "../media/sounds/boing.wav"
+			this.sound_boing.setAttribute("preload", "auto");
+			this.sound_boing.style.display = "none";
+			document.body.appendChild(this.sound_boing);
+
+			// Splat sound
+			this.sound_splat = document.createElement("audio")
+			this.sound_splat.src = "../media/sounds/splat.wav"
+			this.sound_splat.setAttribute("preload", "auto");
+			this.sound_splat.style.display = "none";
+			document.body.appendChild(this.sound_splat);
+			
+			// Hit sound
+			this.sound_hit = document.createElement("audio")
+			this.sound_hit.src = "../media/sounds/hit.wav"
+			this.sound_hit.setAttribute("preload", "auto");
+			this.sound_hit.style.display = "none";
+			document.body.appendChild(this.sound_hit);			
+
+			// Physics 
 			setInterval(physics_obj, globals.draw_ms, mario_sprite)
 		}
+
+		function bounce_sound(){
+			this.sound_boing.play()
+		}
+
+		function splat_sound(){
+			this.sound_splat.play()
+		}	
+		
+		function hit_sound(){
+			this.sound_hit.play()
+		}			
 
 		function draw_obj(arg) {
 			var canvas = document.getElementById("viewport");
@@ -182,22 +227,39 @@
 			arg.p_y += arg.v_y
 
 			if (arg.p_x + arg.width > globals.canvas_width) {
+				if(arg.v_x > globals.hit_sound_speed){
+					hit_sound()
+				}
+
 				arg.p_x = globals.canvas_width - arg.width
 				arg.v_x = -math.round(arg.v_x * globals.physics_bounce)
 				arg.v_y = math.round(arg.v_y * globals.physics_friction)
 			}
 			if (arg.p_x < 0) {
+				if(arg.v_x < -globals.hit_sound_speed){
+					hit_sound()
+				}
+
 				arg.p_x = 0
 				arg.v_x = -math.round(arg.v_x * globals.physics_bounce)
 				arg.v_y = math.round(arg.v_y * globals.physics_friction)
 			}
 
 			if (arg.p_y + arg.height > globals.canvas_height) {
+				if(arg.v_y > globals.squash_sound_speed){
+					splat_sound()
+				}
+
 				arg.p_y = globals.canvas_height - arg.height
 				arg.v_y = -math.round(arg.v_y * globals.physics_bounce)
 				arg.v_x = math.round(arg.v_x * globals.physics_friction)
 			}
 			if (arg.p_y < 0) {
+
+				if(arg.v_y < -globals.hit_sound_speed){
+					hit_sound()
+				}
+
 				arg.p_y = 0
 				arg.v_y = -math.round(arg.v_y * globals.physics_bounce)
 				arg.v_x = math.round(arg.v_x * globals.physics_friction)
