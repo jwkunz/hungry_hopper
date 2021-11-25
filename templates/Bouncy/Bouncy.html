@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<!-- saved from url=(0050)https://numeriusengineering.com//games/Bouncy.html -->
+<html lang="en"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	
+	<title>Bouncy</title>
+	<script src="./Bouncy_files/math.js.download"></script>
+	<script src="./Bouncy_files/plotly-1.35.2.min.js.download"></script><style></style>
+	<style>
+
+	</style>
+
+</head>
+
+<body data-new-gr-c-s-check-loaded="14.1040.0" data-gr-ext-installed="">
+	<div>
+	<canvas id="viewport" width="1920" height="703">&gt;</canvas>
+	<button id="button_up" onclick="move_obj(box_1,0,-1)" style="position: absolute; left: 912px; top: 751px; width: 96px; height: 48px;"> Up</button>
+	<button id="button_left" onclick="move_obj(box_1,-1,0)" style="position: absolute; left: 864px; top: 799px; width: 96px; height: 48px;"> Left</button>
+	<button id="button_right" onclick="move_obj(box_1,1,0)" style="position: absolute; left: 960px; top: 799px; width: 96px; height: 48px;"> Right</button>
+	<button id="button_down" onclick="move_obj(box_1,0,1)" style="position: absolute; left: 912px; top: 847px; width: 96px; height: 48px;"> Down</button>
+	</div>
+
+	<script>
+
+		var globals = {
+			background: "grey",
+			canvas_width: 400,
+			canvas_height: 300,
+			button_height: 20,
+			button_width: 100,
+			button_move_scale: 20,
+			button_impulse_scale: 15,
+			draw_ms: 25,
+			physics_drag: 0.001,
+			physics_friction: 0.4,
+			physics_bounce: 0.6,
+			physics_gravity: 1.0,
+		}
+
+		var box_1 = {
+			color: "red",
+			width: 20,
+			height: 20,
+			p_x: 100,
+			p_y: 100,
+			v_x: 10,
+			v_y: 5,
+			a_x: 0,
+			a_y: 0
+		}
+
+		function init_all(){
+			globals.canvas_width = math.round(window.innerWidth)
+			globals.canvas_height = math.round(window.innerHeight*0.75)
+
+			largest_dim = math.max(globals.canvas_width,globals.canvas_height)
+			globals.button_width = math.round(largest_dim/20)
+			globals.button_height = math.round(globals.button_width/2)
+			box_1.width = math.round(largest_dim/50)
+			box_1.height = math.round(largest_dim/50)
+
+			document.getElementById("viewport").setAttribute('width', globals.canvas_width)
+			document.getElementById("viewport").setAttribute('height', globals.canvas_height)
+
+			document.getElementById("button_up").style.position = "absolute"
+			document.getElementById("button_up").style.left = (globals.canvas_width/2-globals.button_width/2).toString()+'px'
+			document.getElementById("button_up").style.top = (globals.canvas_height+globals.button_height).toString()+'px'
+			document.getElementById("button_up").style.width = (globals.button_width).toString()+'px'
+			document.getElementById("button_up").style.height = (globals.button_height).toString()+'px'
+			document.getElementById("button_up").setAttribute('onclick',"move_obj(box_1,0,-1)")
+
+			document.getElementById("button_left").style.position = "absolute"
+			document.getElementById("button_left").style.left = (globals.canvas_width/2-globals.button_width).toString()+'px'
+			document.getElementById("button_left").style.top = (globals.canvas_height+2*globals.button_height).toString()+'px'
+			document.getElementById("button_left").style.width = (globals.button_width).toString()+'px'
+			document.getElementById("button_left").style.height = (globals.button_height).toString()+'px'
+			document.getElementById("button_left").setAttribute('onclick',"move_obj(box_1,-1,0)")
+
+			document.getElementById("button_right").style.position = "absolute"
+			document.getElementById("button_right").style.left = (globals.canvas_width/2).toString()+'px'
+			document.getElementById("button_right").style.top = (globals.canvas_height+2*globals.button_height).toString()+'px'
+			document.getElementById("button_right").style.width = (globals.button_width).toString()+'px'
+			document.getElementById("button_right").style.height = (globals.button_height).toString()+'px'
+			document.getElementById("button_right").setAttribute('onclick',"move_obj(box_1,1,0)")
+
+			document.getElementById("button_down").style.position = "absolute"
+			document.getElementById("button_down").style.left = (globals.canvas_width/2-globals.button_width/2).toString()+'px'
+			document.getElementById("button_down").style.top = (globals.canvas_height+3*globals.button_height).toString()+'px'
+			document.getElementById("button_down").style.width = (globals.button_width).toString()+'px'
+			document.getElementById("button_down").style.height = (globals.button_height).toString()+'px'
+			document.getElementById("button_down").setAttribute('onclick',"move_obj(box_1,0,1)")
+
+
+			draw_obj({color: globals.background, p_x: 0, p_y: 0, width: globals.canvas_width, height: globals.canvas_height})
+			draw_obj(box_1)
+
+			setInterval(physics_obj,globals.draw_ms,box_1)
+		}
+
+		function draw_obj(arg) {
+			var canvas = document.getElementById("viewport");
+			var ctx = canvas.getContext("2d");
+			ctx.fillStyle = arg.color;
+			ctx.fillRect(arg.p_x, arg.p_y, arg.width, arg.height);
+		}
+
+		function erase_obj(arg) {
+			var canvas = document.getElementById("viewport");
+			var ctx = canvas.getContext("2d");
+			ctx.fillStyle = globals.background;
+			ctx.fillRect(arg.p_x, arg.p_y, arg.width, arg.height);
+		}
+
+		function move_obj(arg,dx,dy){
+			erase_obj(box_1)
+			arg.p_x += dx*globals.button_move_scale
+			arg.p_y += dy*globals.button_move_scale
+			arg.v_x += math.round(dx*globals.button_impulse_scale)
+			arg.v_y += math.round(dy*globals.button_impulse_scale)
+			draw_obj(box_1)
+		}
+
+		function physics_obj(arg){
+			erase_obj(arg) 
+
+			a_y = arg.a_y + globals.physics_gravity - math.sign(arg.v_y)*math.round(globals.physics_drag*arg.v_y**2)
+			a_x = arg.a_x - math.sign(arg.v_x)*math.round(globals.physics_drag*arg.v_x**2)
+
+			arg.v_y += a_y
+			arg.v_x += a_x
+			arg.p_x += arg.v_x
+			arg.p_y += arg.v_y
+
+			if(arg.p_x+arg.width > globals.canvas_width){
+				arg.p_x = globals.canvas_width-arg.width
+				arg.v_x = -math.round(arg.v_x*globals.physics_bounce)
+				arg.v_y = math.round(arg.v_y*globals.physics_friction)
+			}
+			if(arg.p_x <  0){
+				arg.p_x = 0
+				arg.v_x = -math.round(arg.v_x*globals.physics_bounce)
+				arg.v_y = math.round(arg.v_y*globals.physics_friction)
+			}
+
+			if(arg.p_y+arg.height > globals.canvas_height){
+				arg.p_y = globals.canvas_height-arg.height
+				arg.v_y = -math.round(arg.v_y*globals.physics_bounce)
+				arg.v_x = math.round(arg.v_x*globals.physics_friction)
+			}
+			if(arg.p_y <  0){
+				arg.p_y = 0
+				arg.v_y = -math.round(arg.v_y*globals.physics_bounce)
+				arg.v_x = math.round(arg.v_x*globals.physics_friction)
+			}
+
+			draw_obj(arg) 
+		}
+
+		init_all()
+		
+	</script>
+
+
+
+
+</body><grammarly-desktop-integration data-grammarly-shadow-root="true"></grammarly-desktop-integration></html>
