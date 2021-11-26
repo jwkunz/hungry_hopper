@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<!-- saved from url=(0050)https://numeriusengineering.com//games/Bouncy.html -->
+<html lang="en">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+	<title>Animate Face</title>
+	<script src="../../libs/math.js"></script>
+	<style>
+
+	</style>
+</head>
+
+<body>
+		
+	<script>
+		globals = {
+			canvas_width : 800,
+			canvas_height : 600,
+			draw_ms : 100,
+			background_color : "#347aeb"
+		}
+
+		frog = {
+			img : "",
+			animation_states : {
+				rest : {
+					right : {
+					s_x : 0,
+					s_y : 0,
+					s_width : 865,
+					s_height : 475
+					},
+				
+					left : {
+					s_x : 1510,
+					s_y : 0,
+					s_width : 865,
+					s_height : 475
+					},
+				},
+				jump_up : {
+					right : {
+					s_x : 120,
+					s_y : 745,
+					s_width : 1050,
+					s_height : 660
+					},
+				
+					left : {
+					s_x : 1185,
+					s_y : 745,
+					s_width : 1050,
+					s_height : 660
+					},
+				},
+				jump_down : {
+					right : {
+					s_x : 70,
+					s_y : 1410,
+					s_width : 1095,
+					s_height : 590
+					},
+				
+					left : {
+					s_x : 1185,
+					s_y : 1410,
+					s_width : 1095,
+					s_height : 590
+					},
+				},
+				smash : {
+					right : {
+					s_x : 5,
+					s_y : 2180,
+					s_width : 1180,
+					s_height : 346
+					},
+				
+					left : {
+					s_x : 1200,
+					s_y : 2180,
+					s_width : 1180,
+					s_height : 346
+					},
+				},
+				eat : {
+					right : {
+					s_x : 0,
+					s_y : 2645,
+					s_width : 890,
+					s_height : 465
+					},
+				
+					left : {
+					s_x : 1495,
+					s_y : 2645,
+					s_width : 890,
+					s_height : 465
+					},
+				}								
+			},
+			animation_state : "eat",
+			animation_direction : "right",
+			current_animation_state : "",
+			p_x : 0,
+			p_y : 0,
+			p_scale : 0.5
+			}
+
+		function init_all() {
+			globals.canvas_width = math.round(window.innerWidth)
+			globals.canvas_height = math.round(window.innerHeight * 0.75)
+			largest_dim = math.max(globals.canvas_width, globals.canvas_height)
+
+			div = document.createElement("div")
+			canvas = document.createElement("canvas")
+			button_flip = document.createElement("button")
+			select_menu = document.createElement("select")
+			frog.img = new Image()
+			
+			canvas.appendChild(frog.img)
+			div.appendChild(canvas)
+			div.appendChild(button_flip)
+			div.appendChild(select_menu)
+			document.body.appendChild(div)
+
+			canvas.id = "viewport"
+			canvas.width = globals.canvas_width
+			canvas.height = globals.canvas_height
+
+			button_flip.type = "button"
+			button_flip.id = "button_left"
+			button_flip.onclick = function(){flip_frog()}
+
+			button_flip.style.width = math.round(globals.canvas_width/8)+"px"
+			button_flip.style.height = math.round(globals.canvas_height/8)+"px"
+			button_flip.innerHTML = "Flip"
+
+			select_menu.width = math.round(globals.canvas_width/8)+"px"
+			select_menu.height =  math.round(globals.canvas_height/8)+"px"
+			select_menu_o1 = document.createElement("option")
+			select_menu_o1.innerHTML = "Rest"
+			select_menu_o1.value = "rest"
+			select_menu.appendChild(select_menu_o1)
+			select_menu_o2 = document.createElement("option")
+			select_menu_o2.innerHTML = "Jump Up"
+			select_menu_o2.value = "jump_up"
+			select_menu.appendChild(select_menu_o2)
+			select_menu_o3 = document.createElement("option")
+			select_menu_o3.innerHTML = "Jump Down"
+			select_menu_o3.value = "jump_down"
+			select_menu.appendChild(select_menu_o3)
+			select_menu_o4 = document.createElement("option")
+			select_menu_o4.innerHTML = "Smash"
+			select_menu_o4.value = "smash"			
+			select_menu.appendChild(select_menu_o4)
+			select_menu_o5 = document.createElement("option")
+			select_menu_o5.innerHTML = "Eat"
+			select_menu_o5.value = "eat"	
+			select_menu.appendChild(select_menu_o5)
+
+			select_menu.onchange = function(){
+				erase_sprite(frog)
+				frog.animation_state = select_menu.value
+				sprit_update_state(frog)
+				draw_sprite(frog)
+			}
+
+			var ctx = canvas.getContext("2d")
+			ctx.fillStyle = globals.background_color
+			ctx.fillRect(0,0,globals.canvas_width,globals.canvas_height)
+
+			frog.img.src = "../../../media/sprites/frog/frog.png"
+			frog.p_scale = 0.5
+			frog.p_x = math.round(0.3*globals.canvas_width)
+			frog.p_y = math.round(0.4*globals.canvas_height)
+
+		}
+
+		function draw_sprite(arg){
+			var canvas = document.getElementById('viewport')
+			var ctx = canvas.getContext('2d')
+			h = math.round(arg.current_animation_state.s_height*arg.p_scale)
+			w = math.round(arg.current_animation_state.s_width*arg.p_scale)									
+			ctx.drawImage(
+				arg.img,
+				arg.current_animation_state.s_x,
+				arg.current_animation_state.s_y,
+				arg.current_animation_state.s_width,
+				arg.current_animation_state.s_height,
+				arg.p_x,
+				arg.p_y,
+				w,
+				h
+			)
+		}
+
+		function erase_sprite(arg){
+			var canvas = document.getElementById('viewport')
+			var ctx = canvas.getContext('2d')
+			h = math.round(arg.current_animation_state.s_height*arg.p_scale)
+			w = math.round(arg.current_animation_state.s_width*arg.p_scale)
+			ctx.fillStyle = globals.background_color
+			ctx.fillRect(arg.p_x,arg.p_y,w,h);	
+		}
+
+		function sprit_update_state(arg){
+			if(arg.animation_state == "rest"){
+				if(arg.animation_direction == "left"){
+					arg.current_animation_state = arg.animation_states.rest.left
+				}else{
+					arg.current_animation_state = arg.animation_states.rest.right					
+				}
+			}
+			if(arg.animation_state == "jump_up"){
+				if(arg.animation_direction == "left"){
+					arg.current_animation_state = arg.animation_states.jump_up.left
+				}else{
+					arg.current_animation_state = arg.animation_states.jump_up.right				
+				}
+			}
+			if(arg.animation_state == "jump_down"){
+				if(arg.animation_direction == "left"){
+					arg.current_animation_state = arg.animation_states.jump_down.left
+				}else{
+					arg.current_animation_state = arg.animation_states.jump_down.right				
+				}
+			}	
+			if(arg.animation_state == "smash"){
+				if(arg.animation_direction == "left"){
+					arg.current_animation_state = arg.animation_states.smash.left
+				}else{
+					arg.current_animation_state = arg.animation_states.smash.right					
+				}
+			}
+			if(arg.animation_state == "eat"){
+				if(arg.animation_direction == "left"){
+					arg.current_animation_state = arg.animation_states.eat.left
+				}else{
+					arg.current_animation_state = arg.animation_states.eat.right		
+				}
+			}			
+
+		}
+
+		function flip_frog(){
+			erase_sprite(frog)
+			if(frog.animation_direction == "left"){
+				frog.animation_direction = "right"
+			}else{
+				frog.animation_direction = "left"
+			}
+			sprit_update_state(frog)
+			draw_sprite(frog)
+		}
+
+		init_all()
+	</script>
+</body>
