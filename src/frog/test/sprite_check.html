@@ -106,8 +106,114 @@
 			current_animation_state : "",
 			p_x : 0,
 			p_y : 0,
-			p_scale : 0.5
+			p_width : 0,
+			p_height : 0,
+			p_scale : 0.01
 			}
+
+			tongue = {
+			img : "",
+			animation_states : {
+				length_0: {
+					right : {
+					s_x : 1100,
+					s_y : 0,
+					s_width : 100,
+					s_height : 100
+					},
+				
+					left : {
+					s_x : 0,
+					s_y : 560,
+					s_width : 1210,
+					s_height : 120
+					},
+				},
+				length_1 : {
+					right : {
+					s_x : 0,
+					s_y : 0,
+					s_width : 685,
+					s_height : 90
+					},
+				
+					left : {
+					s_x : 0,
+					s_y : 0,
+					s_width : 0,
+					s_height : 0
+					},
+				},
+				length_2 : {
+					right : {
+					s_x : 0,
+					s_y : 260,
+					s_width : 950,
+					s_height : 130
+					},
+				
+					left : {
+					s_x : 0,
+					s_y : 0,
+					s_width : 0,
+					s_height : 0
+					},
+				},
+				length_3 : {
+					right : {
+					s_x : 0,
+					s_y : 560,
+					s_width : 1210,
+					s_height : 120
+					},
+				
+					left : {
+					s_x : 0,
+					s_y : 0,
+					s_width : 0,
+					s_height : 0
+					},
+				},
+				length_4 : {
+					right : {
+					s_x : 0,
+					s_y : 895,
+					s_width : 1450,
+					s_height : 150
+					},
+				
+					left : {
+					s_x : 0,
+					s_y : 0,
+					s_width : 0,
+					s_height : 0
+					},
+				},	
+				length_5 : {
+					right : {
+					s_x : 0,
+					s_y : 1170,
+					s_width : 1736,
+					s_height : 142
+					},
+				
+					left : {
+					s_x : 0,
+					s_y : 0,
+					s_width : 0,
+					s_height : 0
+					},
+				}	
+			},
+			animation_state : "length_0",
+			animation_direction : "right",
+			current_animation_state : "",
+			p_x : 0,
+			p_y : 0,
+			p_width : 0,
+			p_height : 0,
+			p_scale : 0.01
+			}			
 
 		function init_all() {
 			globals.canvas_width = math.round(window.innerWidth)
@@ -117,13 +223,16 @@
 			div = document.createElement("div")
 			canvas = document.createElement("canvas")
 			button_flip = document.createElement("button")
+			button_tongue = document.createElement("button")
 			select_menu = document.createElement("select")
 			frog.img = new Image()
+			tongue.img = new Image()
 			
 			canvas.appendChild(frog.img)
 			div.appendChild(canvas)
 			div.appendChild(button_flip)
 			div.appendChild(select_menu)
+			div.appendChild(button_tongue)
 			document.body.appendChild(div)
 
 			canvas.id = "viewport"
@@ -131,12 +240,20 @@
 			canvas.height = globals.canvas_height
 
 			button_flip.type = "button"
-			button_flip.id = "button_left"
+			button_flip.id = "button_flip"
 			button_flip.onclick = function(){flip_frog()}
+
+			button_tongue.type = "button"
+			button_tongue.id = "button_tongue"
+			button_tongue.onclick = function(){grow_tongue()}
 
 			button_flip.style.width = math.round(globals.canvas_width/8)+"px"
 			button_flip.style.height = math.round(globals.canvas_height/8)+"px"
 			button_flip.innerHTML = "Flip"
+
+			button_tongue.style.width = math.round(globals.canvas_width/8)+"px"
+			button_tongue.style.height = math.round(globals.canvas_height/8)+"px"
+			button_tongue.innerHTML = "Tongue"
 
 			select_menu.width = math.round(globals.canvas_width/8)+"px"
 			select_menu.height =  math.round(globals.canvas_height/8)+"px"
@@ -164,7 +281,7 @@
 			select_menu.onchange = function(){
 				erase_sprite(frog)
 				frog.animation_state = select_menu.value
-				sprit_update_state(frog)
+				compute_frog(frog)
 				draw_sprite(frog)
 			}
 
@@ -173,17 +290,23 @@
 			ctx.fillRect(0,0,globals.canvas_width,globals.canvas_height)
 
 			frog.img.src = "../../../media/sprites/frog/frog.png"
-			frog.p_scale = 0.5
-			frog.p_x = math.round(0.3*globals.canvas_width)
-			frog.p_y = math.round(0.4*globals.canvas_height)
+			frog.p_scale = 0.3
+			compute_frog(frog)
+			frog.p_x = math.round(0)
+			frog.p_y = math.round(globals.canvas_height-frog.p_height*1.5)
 
+			tongue.img.src = "../../../media/sprites/frog/tongue.png"
+			tongue.current_animation_state = tongue.animation_states.length_0.right	
+			tongue.p_scale = 0.3
+			compute_frog(tongue)
+			tongue.p_x = math.round(frog.p_x+frog.p_width*0.5)
+			tongue.p_y = math.round(frog.p_y+frog.p_height*0.3)
+					
 		}
 
 		function draw_sprite(arg){
 			var canvas = document.getElementById('viewport')
-			var ctx = canvas.getContext('2d')
-			h = math.round(arg.current_animation_state.s_height*arg.p_scale)
-			w = math.round(arg.current_animation_state.s_width*arg.p_scale)									
+			var ctx = canvas.getContext('2d')								
 			ctx.drawImage(
 				arg.img,
 				arg.current_animation_state.s_x,
@@ -192,21 +315,19 @@
 				arg.current_animation_state.s_height,
 				arg.p_x,
 				arg.p_y,
-				w,
-				h
+				arg.p_width,
+				arg.p_height
 			)
 		}
 
 		function erase_sprite(arg){
 			var canvas = document.getElementById('viewport')
 			var ctx = canvas.getContext('2d')
-			h = math.round(arg.current_animation_state.s_height*arg.p_scale)
-			w = math.round(arg.current_animation_state.s_width*arg.p_scale)
 			ctx.fillStyle = globals.background_color
-			ctx.fillRect(arg.p_x,arg.p_y,w,h);	
+			ctx.fillRect(arg.p_x,arg.p_y,arg.p_width,arg.p_height);	
 		}
 
-		function sprit_update_state(arg){
+		function compute_frog(arg){
 			if(arg.animation_state == "rest"){
 				if(arg.animation_direction == "left"){
 					arg.current_animation_state = arg.animation_states.rest.left
@@ -243,16 +364,51 @@
 				}
 			}			
 
+			arg.p_height = math.round(arg.current_animation_state.s_height*arg.p_scale)
+			arg.p_width = math.round(arg.current_animation_state.s_width*arg.p_scale)	
 		}
 
 		function flip_frog(){
+			erase_sprite(tongue)
 			erase_sprite(frog)
 			if(frog.animation_direction == "left"){
 				frog.animation_direction = "right"
 			}else{
 				frog.animation_direction = "left"
 			}
-			sprit_update_state(frog)
+			compute_frog(frog)
+
+			draw_sprite(tongue)
+			draw_sprite(frog)
+		}
+
+		function grow_tongue(){
+			erase_sprite(tongue)
+			erase_sprite(frog)
+			if(tongue.animation_state == "length_0"){
+				tongue.animation_state = "length_1"
+				tongue.current_animation_state = tongue.animation_states.length_1.right
+			}else if(tongue.animation_state == "length_1"){
+				tongue.animation_state = "length_2"
+				tongue.current_animation_state = tongue.animation_states.length_2.right
+			}else if(tongue.animation_state == "length_2"){
+				tongue.animation_state = "length_3"
+				tongue.current_animation_state = tongue.animation_states.length_3.right
+			}else if(tongue.animation_state == "length_3"){
+				tongue.animation_state = "length_4"
+				tongue.current_animation_state = tongue.animation_states.length_4.right
+			}else if(tongue.animation_state == "length_4"){
+				tongue.animation_state = "length_5"
+				tongue.current_animation_state = tongue.animation_states.length_0.right
+			}else if(tongue.animation_state == "length_5"){
+				tongue.animation_state = "length_0"
+				tongue.current_animation_state = tongue.animation_states.length_0.right
+			}
+			console.log(tongue.animation_direction)
+
+			tongue.p_height = math.round(tongue.current_animation_state.s_height*tongue.p_scale)
+			tongue.p_width = math.round(tongue.current_animation_state.s_width*tongue.p_scale)	
+			draw_sprite(tongue)
 			draw_sprite(frog)
 		}
 
