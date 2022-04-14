@@ -1,4 +1,8 @@
-class viewport{
+/*
+    A scene is a collection of sprites and a background
+*/
+
+class scene{
     constructor(
         html_host_element,
         list_of_sprites,
