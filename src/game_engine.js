@@ -14,31 +14,41 @@ function game_update(){
                 frog.physics.force_x = 0
             }
 
+            /*
             if(GM.key_up){
                 frog.push_up(GM.frog_push_f)
             }else if(GM.key_down){
                 frog.push_down(GM.frog_push_f)
             }else{
                 frog.physics.force_y = 0
-            }            
+            } 
+            */           
 
             if(GM.key_f){
                 frog.toggle_jump()
-                GM.jump_time_start = GM.elapsed
+                frog.physics.drag = GM.frog_drag_jump
+                frog.push_up(GM.frog_f_jump)
+                frog.physics.g = GM.frog_g_jump
+                frog.physics.force_x = 0
+                GM.jump_y_start = frog.physics.p_y
+
             }
             break
         }
         case frog.state_jump_up:{
-            if(GM.elapsed-GM.jump_time_start > GM.frog_jump_ms){
+            frog.physics.force_y = 0
+            if(frog.physics.v_y >= 0){
                 frog.toggle_jump()
-                GM.jump_time_start = GM.elapsed
             }
             break
         }        
         case frog.state_jump_down:{
-            if(GM.elapsed-GM.jump_time_start > GM.frog_jump_ms){
+            if(GM.jump_y_start <= frog.physics.p_y){
                 frog.toggle_jump()
-                GM.jump_time_start = 0
+                frog.physics.g = 0
+                frog.physics.v_y = 0
+                frog.physics.drag = GM.frog_drag_walk
+                frog.physics.p_y = GM.jump_y_start
             }
             break
         }  

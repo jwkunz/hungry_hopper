@@ -18,9 +18,9 @@ class frog {
         this.physics = new physics_ODE_2D()
         this.physics.p_x = p_x
         this.physics.p_y = p_y
-        this.physics.mass = 1
-        this.physics.g = 0
-        this.physics.drag = 1.0
+        this.physics.mass = GM.frog_mass
+        this.physics.g = 0.0
+        this.physics.drag = GM.frog_drag_walk
 
         this.is_right = facing_right
         this.eat_counter = 0
@@ -43,6 +43,8 @@ class frog {
         )
 
         this.body = new sprite(body_src, body_masks, "rest right", p_x, p_y, scale, rotation)
+
+        this.height = this.body.animation_state_mask_map.get("rest right").s_height*scale
 
         let tongue_src = "../media/sprites/frog/tongue.png"
         let tongue_masks = new Map(
@@ -87,6 +89,47 @@ class frog {
     draw(arg_canvas) {
         this.body.p_x = this.physics.p_x
         this.body.p_y = this.physics.p_y
+
+        if(this.physics.v_x > 0){
+            this.is_right = true
+            switch(this.current_state){
+                case this.state_rest:
+                    this.body.current_animation_state = "rest right"
+                    break
+                case this.state_jump_up:
+                        this.body.current_animation_state = "jump up right"
+                        break
+                case this.state_jump_down:
+                        this.body.current_animation_state = "jump down right"
+                        break        
+                case this.state_eating:
+                        this.body.current_animation_state = "eat right"
+                        s = this.tongue.current_animation_state.split()
+                        s[0] = "right"
+                        this.tongue.current_animation_state = s[0]+" "+s[1]
+                        break    
+            } 
+        }else{
+            this.is_right = false
+            switch(this.current_state){
+                case this.state_rest:
+                    this.body.current_animation_state = "rest left"
+                    break
+                case this.state_jump_up:
+                        this.body.current_animation_state = "jump up left"
+                        break
+                case this.state_jump_down:
+                        this.body.current_animation_state = "jump down left"
+                        break        
+                case this.state_eating:
+                        this.body.current_animation_state = "eat left"
+                        s = this.tongue.current_animation_state.split()
+                        s[0] = "left"
+                        this.tongue.current_animation_state = s[0]+" "+s[1]
+                        break     
+            }         
+        }        
+
         this._place_tongue()
         this.tongue.draw(arg_canvas)
         this.body.draw(arg_canvas)
@@ -157,6 +200,12 @@ class frog {
     }
     push_down(d){
         this.physics.force_y = d
+    }
+
+    set_on_y(
+        y
+    ){
+        this.physics.p_y = y-this.height
     }
 
     toggle_jump(){

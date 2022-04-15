@@ -13,7 +13,7 @@ class physics_ODE_2D{
         // The net force excluding gravity
         this.force_x = 0 
         this.force_y = 0
-        // Drag coefficient (F = c * v^2 * sign(v))
+        // Drag coefficient (F = c * v)
         this.drag = 0
         // Lumped mass
         this.mass = 1
@@ -23,8 +23,8 @@ class physics_ODE_2D{
 
     // Advance physics by dt (seconds)
     step(dt) {
-        let drag_x = -this.drag*this.v_x*this.v_x*math.sign(this.v_x)
-        let drag_y = -this.drag*this.v_y*this.v_y*math.sign(this.v_y)
+        let drag_x = -this.drag*this.v_x
+        let drag_y = -this.drag*this.v_y
 
         // Net accelerations
         this.a_x = (this.force_x + drag_x)/this.mass

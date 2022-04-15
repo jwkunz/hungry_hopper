@@ -22,6 +22,14 @@
 
         let GM = [] // Global game memory
 
+        GM.frog_push_f = 2000
+        GM.frog_f_jump = 60000
+        GM.frog_g_jump = 1000
+        GM.frog_drag_jump = 0.1
+        GM.frog_drag_walk = 5.0
+        GM.frog_mass = 1.0
+        GM.frog_scale = 0.3
+
         function init_all(){
             div = document.createElement("div")
             document.body.appendChild(div)
@@ -30,16 +38,16 @@
 			viewport_height = math.round(window.innerHeight * 0.75)
 			GM.main_scene = new scene(
                 html_host_element = div,
-                list_of_sprites = [new frog(viewport_width/2,viewport_height/2,.1,)],
+                list_of_sprites = [new frog(viewport_width/2,0,GM.frog_scale)],
                 width = viewport_width,
                 height = viewport_height,
                 background = "#000000"
             )   
+            GM.main_scene.sprites[0].set_on_y(viewport_height*0.99)
 
             init_controls()
 
-            GM.frog_jump_ms = 100
-            GM.frog_push_f = 500
+
         }
 
         window.onload = function(){
