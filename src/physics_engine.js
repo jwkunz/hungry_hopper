@@ -21,6 +21,7 @@ class physics_ODE_2D{
         this.g = 9.8
     }
 
+    // Advance physics by dt (seconds)
     step(dt) {
         let drag_x = -this.drag*this.v_x*this.v_x*math.sign(this.v_x)
         let drag_y = -this.drag*this.v_y*this.v_y*math.sign(this.v_y)
@@ -30,8 +31,8 @@ class physics_ODE_2D{
         this.a_y = (this.force_y + drag_y)/this.mass + this.g
 
         // Integrate velocity
-        this.v_x += a_x*dt
-        this.v_y += a_y*dt
+        this.v_x += this.a_x*dt
+        this.v_y += this.a_y*dt
 
         // Integrate position
         this.p_x += this.v_x*dt

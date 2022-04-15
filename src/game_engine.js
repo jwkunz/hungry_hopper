@@ -7,17 +7,21 @@ function game_update(){
         case frog.state_rest:{
             // Move frog
             if(GM.key_left){
-                frog.move_left(GM.frog_move_d)
+                frog.push_left(GM.frog_push_f)
+            }else if(GM.key_right){
+                frog.push_right(GM.frog_push_f)
+            }else{
+                frog.physics.force_x = 0
             }
-            if(GM.key_right){
-                frog.move_right(GM.frog_move_d)
-            }
+
             if(GM.key_up){
-                frog.move_up(GM.frog_move_d)
-            }
-            if(GM.key_down){
-                frog.move_down(GM.frog_move_d)
-            }
+                frog.push_up(GM.frog_push_f)
+            }else if(GM.key_down){
+                frog.push_down(GM.frog_push_f)
+            }else{
+                frog.physics.force_y = 0
+            }            
+
             if(GM.key_f){
                 frog.toggle_jump()
                 GM.jump_time_start = GM.elapsed
@@ -40,6 +44,9 @@ function game_update(){
         }  
     }
 
+    // Physics
+    dt_seconds = GM.dt/1000
+    frog.physics.step(dt_seconds)
 
 
 

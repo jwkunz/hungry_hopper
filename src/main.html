@@ -30,7 +30,7 @@
 			viewport_height = math.round(window.innerHeight * 0.75)
 			GM.main_scene = new scene(
                 html_host_element = div,
-                list_of_sprites = [new frog(viewport_width/2,viewport_height/2,.3,)],
+                list_of_sprites = [new frog(viewport_width/2,viewport_height/2,.1,)],
                 width = viewport_width,
                 height = viewport_height,
                 background = "#000000"
@@ -39,7 +39,7 @@
             init_controls()
 
             GM.frog_jump_ms = 100
-            GM.frog_move_d = 1
+            GM.frog_push_f = 500
         }
 
         window.onload = function(){

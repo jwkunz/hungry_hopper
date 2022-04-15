@@ -20,6 +20,7 @@ class frog {
         this.physics.p_y = p_y
         this.physics.mass = 1
         this.physics.g = 0
+        this.physics.drag = 1.0
 
         this.is_right = facing_right
         this.eat_counter = 0
@@ -138,13 +139,24 @@ class frog {
             }
         }      
     }
-
     move_up(d) {
         this.physics.p_y -=d
     }
-
     move_down(d) {
         this.physics.p_y +=d
+    }
+
+    push_left(d){
+        this.physics.force_x = -d
+    }
+    push_right(d){
+        this.physics.force_x = d
+    }
+    push_up(d){
+        this.physics.force_y = -d
+    }
+    push_down(d){
+        this.physics.force_y = d
     }
 
     toggle_jump(){
