@@ -26,6 +26,8 @@ class frog {
         this.eat_counter = 0
         this.current_state = this.state_rest
 
+        this.last_vx = 0
+
         let body_src = "../media/sprites/frog/frog.png"
         let body_masks = new Map(
             [
@@ -49,7 +51,7 @@ class frog {
         let tongue_src = "../media/sprites/frog/tongue.png"
         let tongue_masks = new Map(
             [
-                ["right 0", new sprite_mask(1100, 0, 100, 100)],
+                ["right 0", new sprite_mask(0, 0, 100, 100)],
                 ["left 0", new sprite_mask(1100, 0, 100, 100)],
                 ["right 1", new sprite_mask(0, 0, 685, 90)],
                 ["left 1", new sprite_mask(2915, 0, 685, 90)],
@@ -82,15 +84,21 @@ class frog {
 
     // Place the tongue in the correct location
     _place_tongue(){
-        this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.6 * this.scale
         this.tongue.p_y = this.body.p_y + this.body.animation_state_mask_map.get("eat right").s_height * 0.4 * this.scale
+        if(this.is_right){
+            this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.6 * this.scale
+        }else{
+            this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.4 * this.scale
+            this.tongue.p_x -= this.tongue.animation_state_mask_map.get(this.tongue.current_animation_state).s_width*this.scale
+        }
     }
 
     draw(arg_canvas) {
         this.body.p_x = this.physics.p_x
         this.body.p_y = this.physics.p_y
 
-        // Decide direction based on velocity
+        // Decide direction based on velocity change
+        
         let dir_word = ""
         if(this.physics.v_x > 0){
             this.is_right = true
