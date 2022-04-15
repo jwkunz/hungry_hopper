@@ -33,6 +33,11 @@ function game_update(){
                 GM.jump_y_start = frog.physics.p_y
 
             }
+
+            if(GM.key_spacebar){
+                
+            }
+            
             break
         }
         case frog.state_jump_up:{

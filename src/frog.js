@@ -90,103 +90,37 @@ class frog {
         this.body.p_x = this.physics.p_x
         this.body.p_y = this.physics.p_y
 
+        // Decide direction based on velocity
+        let dir_word = ""
         if(this.physics.v_x > 0){
             this.is_right = true
-            switch(this.current_state){
-                case this.state_rest:
-                    this.body.current_animation_state = "rest right"
-                    break
-                case this.state_jump_up:
-                        this.body.current_animation_state = "jump up right"
-                        break
-                case this.state_jump_down:
-                        this.body.current_animation_state = "jump down right"
-                        break        
-                case this.state_eating:
-                        this.body.current_animation_state = "eat right"
-                        s = this.tongue.current_animation_state.split()
-                        s[0] = "right"
-                        this.tongue.current_animation_state = s[0]+" "+s[1]
-                        break    
-            } 
+            dir_word = "right"
         }else{
             this.is_right = false
-            switch(this.current_state){
-                case this.state_rest:
-                    this.body.current_animation_state = "rest left"
+            dir_word = "left"
+        }
+
+        switch(this.current_state){
+            case this.state_rest:
+                this.body.current_animation_state = "rest " + dir_word
+                break
+            case this.state_jump_up:
+                    this.body.current_animation_state = "jump up " + dir_word
                     break
-                case this.state_jump_up:
-                        this.body.current_animation_state = "jump up left"
-                        break
-                case this.state_jump_down:
-                        this.body.current_animation_state = "jump down left"
-                        break        
-                case this.state_eating:
-                        this.body.current_animation_state = "eat left"
-                        s = this.tongue.current_animation_state.split()
-                        s[0] = "left"
-                        this.tongue.current_animation_state = s[0]+" "+s[1]
-                        break     
-            }         
-        }        
+            case this.state_jump_down:
+                    this.body.current_animation_state = "jump down " + dir_word
+                    break        
+            case this.state_eating:
+                    this.body.current_animation_state = "eat " + dir_word
+                    s = this.tongue.current_animation_state.split()
+                    s[0] = dir_word
+                    this.tongue.current_animation_state = s[0]+" "+s[1]
+                    break 
+        }
 
         this._place_tongue()
         this.tongue.draw(arg_canvas)
         this.body.draw(arg_canvas)
-    }
-
-    move_left(d) {
-        this.physics.p_x -=d
-        if (this.is_right) {
-            this.is_right = false
-            switch(this.current_state){
-                case this.state_rest:
-                    this.body.current_animation_state = "rest left"
-                    break
-                case this.state_jump_up:
-                        this.body.current_animation_state = "jump up left"
-                        break
-                case this.state_jump_down:
-                        this.body.current_animation_state = "jump down left"
-                        break        
-                case this.state_eating:
-                        this.body.current_animation_state = "eat left"
-                        s = this.tongue.current_animation_state.split()
-                        s[0] = "left"
-                        this.tongue.current_animation_state = s[0]+" "+s[1]
-                        break     
-            }
-        }
-    }
-
-    move_right(d) {
-        this.physics.p_x +=d
-        if (this.is_right == false) {
-            this.is_right = true
-            switch(this.current_state){
-                case this.state_rest:
-                    this.body.current_animation_state = "rest right"
-                    break
-                case this.state_jump_up:
-                        this.body.current_animation_state = "jump up right"
-                        break
-                case this.state_jump_down:
-                        this.body.current_animation_state = "jump down right"
-                        break        
-                case this.state_eating:
-                        this.body.current_animation_state = "eat right"
-                        s = this.tongue.current_animation_state.split()
-                        s[0] = "right"
-                        this.tongue.current_animation_state = s[0]+" "+s[1]
-                        break     
-            }
-        }      
-    }
-    move_up(d) {
-        this.physics.p_y -=d
-    }
-    move_down(d) {
-        this.physics.p_y +=d
     }
 
     push_left(d){
