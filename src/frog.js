@@ -14,8 +14,13 @@ class frog {
 
         this.scale = scale
         this.rotation = rotation
-        this.p_x = p_x
-        this.p_y = p_y
+
+        this.physics = new physics_ODE_2D()
+        this.physics.p_x = p_x
+        this.physics.p_y = p_y
+        this.physics.mass = 1
+        this.physics.g = 0
+
         this.is_right = facing_right
         this.eat_counter = 0
         this.current_state = this.state_rest
@@ -56,15 +61,15 @@ class frog {
             ]
         )
 
-        let t_x = p_x + body_masks.get("eat right").s_width * 0.6 * scale
-        let t_y = p_y + body_masks.get("eat right").s_height * 0.4 * scale
+
         this.tongue = new sprite(
             tongue_src,
             tongue_masks, "right 0",
-            t_x,
-            t_y,
+            0,
+            0,
             scale,
             rotation)
+        this._place_tongue()
     }
 
     load_img_to_canvas(arg_canvas) {
@@ -72,15 +77,22 @@ class frog {
         arg_canvas.appendChild(this.tongue.img)
     }
 
+    // Place the tongue in the correct location
+    _place_tongue(){
+        this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.6 * this.scale
+        this.tongue.p_y = this.body.p_y + this.body.animation_state_mask_map.get("eat right").s_height * 0.4 * this.scale
+    }
 
     draw(arg_canvas) {
+        this.body.p_x = this.physics.p_x
+        this.body.p_y = this.physics.p_y
+        this._place_tongue()
         this.tongue.draw(arg_canvas)
         this.body.draw(arg_canvas)
     }
 
     move_left(d) {
-        this.body.p_x -= d
-        this.tongue.p_x -= d
+        this.physics.p_x -=d
         if (this.is_right) {
             this.is_right = false
             switch(this.current_state){
@@ -104,8 +116,7 @@ class frog {
     }
 
     move_right(d) {
-        this.body.p_x += d
-        this.tongue.p_x += d
+        this.physics.p_x +=d
         if (this.is_right == false) {
             this.is_right = true
             switch(this.current_state){
@@ -129,13 +140,11 @@ class frog {
     }
 
     move_up(d) {
-        this.body.p_y -= d
-        this.tongue.p_y -= d
+        this.physics.p_y -=d
     }
 
     move_down(d) {
-        this.body.p_y += d
-        this.tongue.p_y += d
+        this.physics.p_y +=d
     }
 
     toggle_jump(){

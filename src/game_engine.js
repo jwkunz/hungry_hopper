@@ -2,23 +2,22 @@ function game_update(){
     
     let frog = GM.main_scene.sprites[0]
 
-    // Move frog
-    let d_frog = 1
-    if(GM.key_left){
-        frog.move_left(d_frog)
-    }
-    if(GM.key_right){
-        frog.move_right(d_frog)
-    }
-    if(GM.key_up){
-        frog.move_up(d_frog)
-    }
-    if(GM.key_down){
-        frog.move_down(d_frog)
-    }
     // Handle jumping
     switch(frog.current_state){
         case frog.state_rest:{
+            // Move frog
+            if(GM.key_left){
+                frog.move_left(GM.frog_move_d)
+            }
+            if(GM.key_right){
+                frog.move_right(GM.frog_move_d)
+            }
+            if(GM.key_up){
+                frog.move_up(GM.frog_move_d)
+            }
+            if(GM.key_down){
+                frog.move_down(GM.frog_move_d)
+            }
             if(GM.key_f){
                 frog.toggle_jump()
                 GM.jump_time_start = GM.elapsed

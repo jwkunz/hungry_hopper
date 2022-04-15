@@ -8,7 +8,7 @@
     <script src="./libs/math.js" type="text/javascript"></script>
     <script src="scene.js" type="text/javascript"></script>
     <script src="sprite.js" type="text/javascript"></script>
-    <script src="tongue.js" type="text/javascript"></script>
+    <script src="physics_engine.js" type="text/javascript"></script>
     <script src="frog.js" type="text/javascript"></script>
     <script src="game_engine.js" type="text/javascript"></script>
     <script src="ui.js" type="text/javascript"></script>
@@ -38,8 +38,8 @@
 
             init_controls()
 
-            GM.frog_jump_ms = 500
-
+            GM.frog_jump_ms = 100
+            GM.frog_move_d = 1
         }
 
         window.onload = function(){
