@@ -101,7 +101,7 @@ function game_update() {
                             frog.tongue.current_animation_state = dir_word + " 0"
                             GM.frog_tongue_start = GM.elapsed
                             frog.eat_counter = 1
-                            frog.physics.v_x = 0
+                            //frog.physics.v_x = 0
                             frog.physics.force_x = 0
                             break
                         }
