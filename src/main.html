@@ -10,6 +10,7 @@
     <script src="sprite.js" type="text/javascript"></script>
     <script src="tongue.js" type="text/javascript"></script>
     <script src="frog.js" type="text/javascript"></script>
+    <script src="game_engine.js" type="text/javascript"></script>
     
     <style>
 
@@ -19,15 +20,15 @@
 <body>
     <script type="text/javascript">
 
-        let main_scene = []
+        let GM = [] // Global game memory
+
         function init_all(){
             div = document.createElement("div")
             document.body.appendChild(div)
      
             viewport_width = math.round(window.innerWidth)
 			viewport_height = math.round(window.innerHeight * 0.75)
-			largest_dim = math.max(viewport_width, viewport_height)
-            main_scene = new scene(
+			GM.main_scene = new scene(
                 html_host_element = div,
                 list_of_sprites = [new frog(
                     0,0,0.5,0
@@ -40,7 +41,9 @@
         }
 
         window.onload = function(){
-            main_scene.draw()
+            GM.last_timestamp = 0
+            GM.elapsed = 0
+            window.requestAnimationFrame(game_loop)
         }
         
         init_all()
