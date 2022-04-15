@@ -143,27 +143,17 @@ class frog {
     }
 
     toggle_jump(){
-        let state_string = ""
         switch(this.current_state){
             case this.state_rest:
                 this.current_state = this.state_jump_up
-                state_string= "jump up "
                 break
             case this.state_jump_up:
                 this.current_state = this.state_jump_down
-                state_string= "jump down "
                 break
             case this.state_jump_down:
                 this.current_state = this.state_rest
-                state_string= "rest "
                 break      
         }
-        if(this.is_right){
-            state_string += "right"
-        }else{
-            state_string += "left"
-        }            
-        this.body.current_animation_state = state_string
     }
 
 }
