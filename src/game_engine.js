@@ -15,6 +15,7 @@ function game_update(){
             }
 
             /*
+            // Up down motion
             if(GM.key_up){
                 frog.push_up(GM.frog_push_f)
             }else if(GM.key_down){
@@ -25,7 +26,7 @@ function game_update(){
             */           
 
             if(GM.key_f){
-                frog.toggle_jump()
+                frog.current_state = frog.state_jump_up
                 frog.physics.drag = GM.frog_drag_jump
                 frog.push_up(GM.frog_f_jump)
                 frog.physics.g = GM.frog_g_jump
@@ -35,7 +36,7 @@ function game_update(){
             }
 
             if(GM.key_spacebar){
-                
+
             }
             
             break
@@ -43,13 +44,13 @@ function game_update(){
         case frog.state_jump_up:{
             frog.physics.force_y = 0
             if(frog.physics.v_y >= 0){
-                frog.toggle_jump()
+                frog.current_state = frog.state_jump_down
             }
             break
         }        
         case frog.state_jump_down:{
             if(GM.jump_y_start <= frog.physics.p_y){
-                frog.toggle_jump()
+                frog.current_state = frog.state_rest
                 frog.physics.g = 0
                 frog.physics.v_y = 0
                 frog.physics.drag = GM.frog_drag_walk

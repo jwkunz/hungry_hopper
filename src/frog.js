@@ -141,19 +141,4 @@ class frog {
     ){
         this.physics.p_y = y-this.height
     }
-
-    toggle_jump(){
-        switch(this.current_state){
-            case this.state_rest:
-                this.current_state = this.state_jump_up
-                break
-            case this.state_jump_up:
-                this.current_state = this.state_jump_down
-                break
-            case this.state_jump_down:
-                this.current_state = this.state_rest
-                break      
-        }
-    }
-
 }
