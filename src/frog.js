@@ -48,7 +48,7 @@ class frog {
 
         this.body = new sprite(body_src, body_masks, "rest right", p_x, p_y, scale, rotation)
 
-        this.height = this.body.animation_state_mask_map.get("rest right").s_height*scale
+        this.height = this.body.animation_state_mask_map.get("rest right").s_height * scale
 
         let tongue_src = "../media/sprites/frog/tongue.png"
         let tongue_masks = new Map(
@@ -71,11 +71,30 @@ class frog {
 
         this.tongue = new sprite(
             tongue_src,
-            tongue_masks, "right 0",
+            tongue_masks, 
+            "right 0",
             0,
             0,
             scale,
             0)
+
+        let crosshairs_src = "../media/sprites/frog/crosshairs.png"
+        let crosshairs_map = new Map(
+            [
+                ["on", new sprite_mask(0, 0, 175, 175)],
+                ["off", new sprite_mask(0, 0, 0, 0)]
+            ]
+        )
+        this.crosshairs = new sprite(
+            crosshairs_src,
+            crosshairs_map,
+            "on",
+            0,
+            0,
+            scale,
+            0
+        )
+
         this._place_tongue()
     }
 
@@ -84,18 +103,27 @@ class frog {
         arg_canvas.appendChild(this.tongue.img)
     }
 
-    // Place the tongue in the correct location
-    _place_tongue(){
+    // Place the tongue and crosshairs in the correct location
+    _place_tongue() {
         this.tongue.p_y = this.body.p_y + this.body.animation_state_mask_map.get("eat right").s_height * 0.4 * this.scale
-        if(this.is_right){
+        let len_tongue = this.tongue.animation_state_mask_map.get(this.tongue.current_animation_state).s_width * this.scale
+        let R = this.tongue.animation_state_mask_map.get("right 5").s_width * this.scale
+        let theta = this.tongue_angle_deg * Math.PI / 180
+        let c = math.cos(theta)
+        let s = math.sin(theta)
+
+        if (this.is_right) {
             this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.6 * this.scale
-            this.tongue.rotation = this.tongue_angle_deg*Math.PI/180
-        }else{
-            this.tongue.rotation = -this.tongue_angle_deg*Math.PI/180
-            let R = this.tongue.animation_state_mask_map.get(this.tongue.current_animation_state).s_width*this.scale
+            this.crosshairs.p_x = this.tongue.p_x + R * c - this.crosshairs.animation_state_mask_map.get("on").s_width * this.scale / 2
+            this.crosshairs.p_y = this.tongue.p_y + R * s
+            this.tongue.rotation = theta
+        } else {
             this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.4 * this.scale
-            this.tongue.p_x -= R*Math.cos(this.tongue.rotation)
-            this.tongue.p_y -= R*Math.sin(this.tongue.rotation)
+            this.crosshairs.p_x = this.tongue.p_x - R * c - this.crosshairs.animation_state_mask_map.get("on").s_width * this.scale / 2
+            this.crosshairs.p_y = this.tongue.p_y + R * s
+            this.tongue.p_x -= len_tongue * c
+            this.tongue.p_y += len_tongue * s
+            this.tongue.rotation = -theta
         }
     }
 
@@ -104,55 +132,63 @@ class frog {
         this.body.p_y = this.physics.p_y
 
         // Decide direction based on velocity change
-        
+
         let dir_word = ""
-        if(this.physics.v_x > 0){
+        if (this.physics.v_x > 0) {
             this.is_right = true
             dir_word = "right"
-        }else{
+        } else {
             this.is_right = false
             dir_word = "left"
         }
 
-        switch(this.current_state){
+        switch (this.current_state) {
             case this.state_rest:
                 this.body.current_animation_state = "rest " + dir_word
+                this.crosshairs.current_animation_state = "on"
+                this.tongue.current_animation_state = "right 0"
                 break
             case this.state_jump_up:
-                    this.body.current_animation_state = "jump up " + dir_word
-                    break
+                this.body.current_animation_state = "jump up " + dir_word
+                this.crosshairs.current_animation_state = "off"
+                this.tongue.current_animation_state = "right 0"
+                break
             case this.state_jump_down:
-                    this.body.current_animation_state = "jump down " + dir_word
-                    break        
+                this.body.current_animation_state = "jump down " + dir_word
+                this.crosshairs.current_animation_state = "off"
+                this.tongue.current_animation_state = "right 0"
+                break
             case this.state_eating:
-                    this.body.current_animation_state = "eat " + dir_word
-                    s = this.tongue.current_animation_state.split()
-                    s[0] = dir_word
-                    this.tongue.current_animation_state = s[0]+" "+s[1]
-                    break 
+                this.body.current_animation_state = "eat " + dir_word
+                this.crosshairs.current_animation_state = "on"
+                s = this.tongue.current_animation_state.split()
+                s[0] = dir_word
+                this.tongue.current_animation_state = s[0] + " " + s[1]
+                break
         }
 
         this._place_tongue()
         this.tongue.draw(arg_canvas)
+        this.crosshairs.draw(arg_canvas)
         this.body.draw(arg_canvas)
     }
 
-    push_left(d){
+    push_left(d) {
         this.physics.force_x = -d
     }
-    push_right(d){
+    push_right(d) {
         this.physics.force_x = d
     }
-    push_up(d){
+    push_up(d) {
         this.physics.force_y = -d
     }
-    push_down(d){
+    push_down(d) {
         this.physics.force_y = d
     }
 
     set_on_y(
         y
-    ){
-        this.physics.p_y = y-this.height
+    ) {
+        this.physics.p_y = y - this.height
     }
 }

@@ -148,43 +148,63 @@ function game_update() {
                         }
                         case 5: {
                             frog.body.current_animation_state = "eat " + dir_word
-                            frog.tongue.current_animation_state = dir_word + " 3"
+                            frog.tongue.current_animation_state = dir_word + " 5"
                             if(GM.elapsed - GM.frog_tongue_start > GM.frog_tongue_action_ms){
                                 GM.frog_tongue_start = GM.elapsed
                                 frog.eat_counter = 6
                             }
                             break
-                        }     
+                        }    
                         case 6: {
                             frog.body.current_animation_state = "eat " + dir_word
-                            frog.tongue.current_animation_state = dir_word + " 2"
+                            frog.tongue.current_animation_state = dir_word + " 4"
                             if(GM.elapsed - GM.frog_tongue_start > GM.frog_tongue_action_ms){
                                 GM.frog_tongue_start = GM.elapsed
                                 frog.eat_counter = 7
                             }
                             break
-                        }   
+                        }                    
                         case 7: {
                             frog.body.current_animation_state = "eat " + dir_word
-                            frog.tongue.current_animation_state = dir_word + " 1"
+                            frog.tongue.current_animation_state = dir_word + " 3"
                             if(GM.elapsed - GM.frog_tongue_start > GM.frog_tongue_action_ms){
                                 GM.frog_tongue_start = GM.elapsed
                                 frog.eat_counter = 8
                             }
                             break
-                        }                
+                        }     
                         case 8: {
                             frog.body.current_animation_state = "eat " + dir_word
-                            frog.tongue.current_animation_state = dir_word + " 0"
+                            frog.tongue.current_animation_state = dir_word + " 2"
                             if(GM.elapsed - GM.frog_tongue_start > GM.frog_tongue_action_ms){
                                 GM.frog_tongue_start = GM.elapsed
                                 frog.eat_counter = 9
                             }
                             break
-                        }                                                                                                              
+                        }   
                         case 9: {
+                            frog.body.current_animation_state = "eat " + dir_word
+                            frog.tongue.current_animation_state = dir_word + " 1"
+                            if(GM.elapsed - GM.frog_tongue_start > GM.frog_tongue_action_ms){
+                                GM.frog_tongue_start = GM.elapsed
+                                frog.eat_counter = 10
+                            }
+                            break
+                        }                
+                        case 10: {
+                            frog.body.current_animation_state = "eat " + dir_word
+                            frog.tongue.current_animation_state = dir_word + " 0"
+                            if(GM.elapsed - GM.frog_tongue_start > GM.frog_tongue_action_ms){
+                                GM.frog_tongue_start = GM.elapsed
+                                frog.eat_counter = 11
+                            }
+                            break
+                        }                                                                                                              
+                        case 11: {
+                            // Reload
                             frog.body.current_animation_state = "rest " + dir_word
                             frog.tongue.current_animation_state = dir_word + " 0"
+                            //frog.crosshairs.current_animation_state = "off"
                             if(GM.elapsed - GM.frog_tongue_start > GM.frog_tongue_reload_ms){
                                 GM.frog_tongue_start = GM.elapsed
                                 frog.eat_counter = 0
