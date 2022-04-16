@@ -46,18 +46,20 @@ class sprite{
 	draw(arg_canvas){
         let mask = this.animation_state_mask_map.get(this.current_animation_state)
 		let ctx = arg_canvas.getContext('2d')
-		ctx.rotate(this.p_rotation)
+        ctx.translate(this.p_x,this.p_y)
+		ctx.rotate(this.rotation)
 		ctx.drawImage(
 			this.img,
 			mask.s_x,
 			mask.s_y,
 			mask.s_width,
 			mask.s_height,
-			this.p_x,
-			this.p_y,
+			0,
+			0,
 			mask.s_width*this.scale,
 			mask.s_height*this.scale
 		)
-		ctx.rotate(-this.p_rotation)
+		ctx.rotate(-this.rotation)
+        ctx.translate(-this.p_x,-this.p_y)
 	}
 }

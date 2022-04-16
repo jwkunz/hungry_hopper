@@ -26,6 +26,8 @@ class frog {
         this.eat_counter = 0
         this.current_state = this.state_rest
 
+        this.tongue_angle_deg = 0
+
         this.last_vx = 0
 
         let body_src = "../media/sprites/frog/frog.png"
@@ -73,7 +75,7 @@ class frog {
             0,
             0,
             scale,
-            rotation)
+            0)
         this._place_tongue()
     }
 
@@ -87,9 +89,13 @@ class frog {
         this.tongue.p_y = this.body.p_y + this.body.animation_state_mask_map.get("eat right").s_height * 0.4 * this.scale
         if(this.is_right){
             this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.6 * this.scale
+            this.tongue.rotation = this.tongue_angle_deg*Math.PI/180
         }else{
+            this.tongue.rotation = -this.tongue_angle_deg*Math.PI/180
+            let R = this.tongue.animation_state_mask_map.get(this.tongue.current_animation_state).s_width*this.scale
             this.tongue.p_x = this.body.p_x + this.body.animation_state_mask_map.get("eat right").s_width * 0.4 * this.scale
-            this.tongue.p_x -= this.tongue.animation_state_mask_map.get(this.tongue.current_animation_state).s_width*this.scale
+            this.tongue.p_x -= R*Math.cos(this.tongue.rotation)
+            this.tongue.p_y -= R*Math.sin(this.tongue.rotation)
         }
     }
 

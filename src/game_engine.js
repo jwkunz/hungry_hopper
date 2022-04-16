@@ -44,16 +44,22 @@ function game_update() {
                         frog.physics.force_x = 0
                     }
 
-                    /*
+                    
                     // Up down motion
                     if(GM.key_up){
-                        frog.push_up(GM.frog_push_f)
+                        frog.tongue_angle_deg -= GM.frog_tongue_angle_step_deg
+                        if(frog.tongue_angle_deg < -GM.frog_tongue_angle_limit_up_deg){
+                            frog.tongue_angle_deg = -GM.frog_tongue_angle_limit_up_deg
+                        }
                     }else if(GM.key_down){
-                        frog.push_down(GM.frog_push_f)
+                        frog.tongue_angle_deg += GM.frog_tongue_angle_step_deg
+                        if(frog.tongue_angle_deg > GM.frog_tongue_angle_limit_down_deg){
+                            frog.tongue_angle_deg = GM.frog_tongue_angle_limit_down_deg
+                        }
                     }else{
-                        frog.physics.force_y = 0
+                        // Nothing
                     } 
-                    */
+                    
 
                     if (GM.key_f) {
                         frog.current_state = frog.state_jump_up
@@ -101,7 +107,6 @@ function game_update() {
                             frog.tongue.current_animation_state = dir_word + " 0"
                             GM.frog_tongue_start = GM.elapsed
                             frog.eat_counter = 1
-                            //frog.physics.v_x = 0
                             frog.physics.force_x = 0
                             break
                         }
