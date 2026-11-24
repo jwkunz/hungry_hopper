@@ -62,12 +62,16 @@ keyboard and touch buttons both just set flags on it.
 - [x] Fall into a gap → respawn
 - [x] Tests for collision and level jumpability
 
-### M2 — Enemies, tongue & stomp
-- [ ] Entity base class + simple AABB overlap tests
-- [ ] Tongue hitbox that follows the tongue animation/aim → eat on hit
-- [ ] First enemy: **mosquito** (hover/patrol; sprite sheet already in assets)
-- [ ] Stomp detection (land on top ⇒ kill + bounce); any other contact ⇒ frog dies
-- [ ] Score + HUD; eaten enemies give points, stomps give fewer
+### M2 — Enemies, tongue & stomp *(2.2.0)*
+- [x] Entity base class + AABB overlap tests
+- [x] Tongue hitbox that follows the tongue animation/aim → eat on hit (tongue retracts early on a hit)
+- [x] **Tongue works in the air** as well as on the ground
+- [x] First enemy: **mosquito** (hover/patrol, flaps, flips to face its direction)
+- [x] Stomp detection (land on top ⇒ kill + bounce, higher if jump is held)
+- [x] **Health model: one hit kills; a shield power-up absorbs one hit** (see below)
+- [x] Firefly pickup grants the shield (touch it or tongue it); 1.5 s invulnerability after it pops
+- [x] Death hop → respawn; score + popups + HUD (eat = 200, stomp = 100, pickup = 50)
+- [x] `?debug` URL flag draws hitboxes and the tongue segment
 
 ### M3 — Game flow
 - [ ] States: title → play → dead → game over / level complete
@@ -101,7 +105,14 @@ beetle (armoured: belly-tongue or stomp) · pill bug (rolls) · more mosquitos
 - [ ] Mini-bosses, secrets, level select
 - [ ] Android wrapper project, performance pass on low-end devices
 
+## Decisions
+- **Tongue works while airborne** (decided; implemented in M2). While the tongue
+  is out on the ground the frog is planted; in the air you keep steering.
+- **One health.** Any non-stomp contact with an enemy kills the frog instantly,
+  *unless* it holds a **shield** (from eating/touching a glowing firefly). The
+  shield absorbs exactly one hit, then gives a short invulnerability window.
+  Shield does not stack. Hazards that should ignore the shield (e.g. pits) are
+  always lethal; briars (M4) should respect it.
+
 ## Open questions
-- Tongue while airborne? (M1–M2: grounded only, as in v1.)
-- Keep strict one-hit death, or add the one-hit "shield" power-up only?
 - Level format: hand-coded for now; move to JSON/tiled map once M5 starts?

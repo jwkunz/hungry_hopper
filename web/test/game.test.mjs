@@ -92,3 +92,44 @@ test('one-way leaves: pass up through them, land on them from above', () => {
   assert.equal(r.grounded, true)
   assert.ok(Math.abs(p.p_y - (300 - hb.h)) < 0.01)
 })
+
+import { segmentHitsRect, isStomp, rectsOverlap } from '../src/game/collision.js'
+
+test('segmentHitsRect: hits, misses, and thickness', () => {
+  const r = { x: 100, y: 100, w: 40, h: 30 }
+  assert.ok(segmentHitsRect(0, 115, 120, 115, r), 'passes through the box')
+  assert.ok(!segmentHitsRect(0, 115, 90, 115, r), 'stops short')
+  assert.ok(!segmentHitsRect(0, 90, 200, 90, r), 'passes above')
+  assert.ok(segmentHitsRect(0, 90, 200, 90, r, 12), 'thickness reaches it')
+  assert.ok(segmentHitsRect(120, 0, 120, 200, r), 'vertical segment')
+  assert.ok(segmentHitsRect(0, 0, 200, 200, r), 'diagonal')
+})
+
+test('isStomp: only when coming down onto the top half', () => {
+  const e = { x: 0, y: 100, w: 50, h: 40 }
+  assert.ok(isStomp(95, 200, e), 'falling from above')
+  assert.ok(!isStomp(95, -200, e), 'rising into it from below is not a stomp')
+  assert.ok(!isStomp(130, 200, e), 'feet already below the midline = side hit')
+})
+
+test('rectsOverlap', () => {
+  assert.ok(rectsOverlap({ x: 0, y: 0, w: 10, h: 10 }, { x: 9, y: 9, w: 10, h: 10 }))
+  assert.ok(!rectsOverlap({ x: 0, y: 0, w: 10, h: 10 }, { x: 10, y: 0, w: 10, h: 10 }))
+})
+
+test('level 1: enemies and pickups are in bounds and not inside solid ground', () => {
+  const things = [...level.mosquitos, ...level.fireflies]
+  for (const t of things) {
+    assert.ok(t.x > 0 && t.x < level.width, `x in bounds: ${t.x}`)
+    assert.ok(t.y < level.ground_y - 20, `above the ground: ${t.x},${t.y}`)
+  }
+  // Fireflies must be reachable by tongue or jump: within ~apex+frog height of some surface
+  const apex = (cfg.jump_speed ** 2) / (2 * cfg.gravity)
+  for (const f of level.fireflies) {
+    const surfaces = [
+      ...level.segments.map((s) => ({ x: s.x, w: s.w, y: level.ground_y })),
+      ...level.leaves,
+    ].filter((s) => f.x >= s.x - 120 && f.x <= s.x + s.w + 120)
+    assert.ok(surfaces.some((s) => s.y - f.y <= apex + 90), `firefly at ${f.x} reachable`)
+  }
+})

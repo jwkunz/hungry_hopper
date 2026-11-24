@@ -6,13 +6,6 @@ import frogSheet from '../assets/sprites/frog/frog.png'
 import tongueSheet from '../assets/sprites/frog/tongue.png'
 import crosshairsSheet from '../assets/sprites/frog/crosshairs.png'
 
-export const FrogState = Object.freeze({
-  REST: 'rest', // standing / walking on the ground
-  JUMP_UP: 'jump_up',
-  JUMP_DOWN: 'jump_down',
-  EAT: 'eat',
-})
-
 // Tongue frames played during one eat: out to the max, then back in.
 const TONGUE_SEQUENCE = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1, 0]
 
@@ -64,6 +57,7 @@ export class Frog {
     this.body = new Sprite(frogSheet, BODY_MASKS, 'rest right', 0, 0, this.scale)
     this.tongue = new Sprite(tongueSheet, TONGUE_MASKS, 'right 0', 0, 0, this.scale)
     this.crosshairs = new Sprite(crosshairsSheet, CROSSHAIR_MASKS, 'on', 0, 0, this.scale)
+    this.mouth = { x: 0, y: 0 } // where the tongue leaves the body (world coords)
 
     this.respawn(x, y)
   }
@@ -75,37 +69,107 @@ export class Frog {
     p.v_x = p.v_y = 0
     p.force_x = p.force_y = 0
     p.drag = this.cfg.ground_drag
-    this.state = FrogState.REST
+    this.dead = false
+    this.shield = false
+    this.invuln_ms = 0
     this.is_right = true
     this.grounded = false
     this.jumping = false
     this.coyote_ms = 0
     this.jump_buffer_ms = 0
     this.tongue_angle_deg = 0
-    this.eat_step = 0
-    this.eat_timer_ms = 0
+    // Tongue: -1 = idle/ready, 0..SEQ.length-1 = extending/retracting,
+    // SEQ.length = reloading
+    this.tongue_step = -1
+    this.tongue_timer_ms = 0
     this._syncSprites()
   }
 
   get x() { return this.physics.p_x }
   get y() { return this.physics.p_y }
   get dir() { return this.is_right ? 'right' : 'left' }
+  get hitbox() { return { x: this.x, y: this.y, w: this.w, h: this.h } }
+
+  get tongueExtending() {
+    return this.tongue_step >= 0 && this.tongue_step < TONGUE_SEQUENCE.length
+  }
+  // Current tongue frame 0..5 (0 = tucked away)
+  get tongueFrame() {
+    return this.tongueExtending ? TONGUE_SEQUENCE[this.tongue_step] : 0
+  }
+
+  // The tongue as a line segment (for hit tests), or null when tucked away.
+  tongueSegment() {
+    const f = this.tongueFrame
+    if (f === 0) return null
+    const len = this.tongue.mask().s_width * this.scale
+    const th = (this.tongue_angle_deg * Math.PI) / 180
+    const dx = (this.is_right ? 1 : -1) * Math.cos(th)
+    const dy = Math.sin(th)
+    const y0 = this.mouth.y + 6 // roughly the tongue's centre line
+    return { x1: this.mouth.x, y1: y0, x2: this.mouth.x + dx * len, y2: y0 + dy * len }
+  }
+
+  // The tongue hit something: pull it back in instead of finishing the reach.
+  retractTongue() {
+    const i = this.tongue_step
+    if (i >= 0 && i < 5) {
+      this.tongue_step = TONGUE_SEQUENCE.length - 1 - i
+      this.tongue_timer_ms = 0
+    }
+  }
+
+  die() {
+    if (this.dead) return
+    this.dead = true
+    this.tongue_step = -1
+    const p = this.physics
+    p.v_x = 0
+    p.v_y = -this.cfg.death_hop
+    p.force_x = p.force_y = 0
+  }
 
   // input: { left, right, up, down, jump, eat } booleans (held state).
   // The engine sets jump_buffer_ms when jump is newly pressed.
   update(dt_ms, input, level) {
     const { cfg, physics: p } = this
     const dt = dt_ms / 1000
-    const eating = this.state === FrogState.EAT
 
+    if (this.dead) {
+      // Death hop: no collisions, just fall off the screen
+      p.drag = 0
+      p.drag_y = 0
+      p.step(dt)
+      this._syncSprites()
+      return
+    }
+
+    this.invuln_ms = Math.max(0, this.invuln_ms - dt_ms)
     this.jump_buffer_ms = Math.max(0, this.jump_buffer_ms - dt_ms)
     this.coyote_ms = this.grounded ? cfg.coyote_ms : Math.max(0, this.coyote_ms - dt_ms)
 
-    // --- Horizontal control ---
+    // --- Tongue: aim, fire, animate (works on the ground and in the air) ---
+    if (!this.tongueExtending) {
+      const step = cfg.frog_tongue_aim_deg_per_s * dt
+      if (input.up) {
+        this.tongue_angle_deg = Math.max(this.tongue_angle_deg - step, -cfg.frog_tongue_angle_limit_up_deg)
+      } else if (input.down) {
+        this.tongue_angle_deg = Math.min(this.tongue_angle_deg + step, cfg.frog_tongue_angle_limit_down_deg)
+      }
+    }
+    if (input.eat && this.tongue_step < 0) {
+      this.tongue_step = 0
+      this.tongue_timer_ms = 0
+    } else if (this.tongue_step >= 0) {
+      this._updateTongue(dt_ms)
+    }
+
+    // --- Horizontal control (planted while the tongue is out on the ground) ---
     p.drag = this.grounded ? cfg.ground_drag : cfg.air_drag
     p.drag_y = 0
     const dirInput = (input.right ? 1 : 0) - (input.left ? 1 : 0)
-    if (eating || dirInput === 0) {
+    const planted = this.grounded && this.tongueExtending
+    if (planted || dirInput === 0) {
       p.force_x = 0
     } else {
       p.force_x = dirInput * cfg.run_speed * p.drag // terminal speed = run_speed
@@ -113,7 +177,7 @@ export class Frog {
     }
 
     // --- Jump (buffered, with coyote time, variable height) ---
-    if (!eating && this.jump_buffer_ms > 0 && this.coyote_ms > 0) {
+    if (this.jump_buffer_ms > 0 && this.coyote_ms > 0) {
       p.v_y = -cfg.jump_speed
       this.jumping = true
       this.grounded = false
@@ -123,23 +187,6 @@ export class Frog {
     if (this.jumping && !input.jump && p.v_y < -cfg.jump_speed * cfg.jump_cut) {
       p.v_y = -cfg.jump_speed * cfg.jump_cut
     }
-
-    // --- Tongue aiming + eating (grounded only) ---
-    if (this.grounded && !eating) {
-      const step = cfg.frog_tongue_aim_deg_per_s * dt
-      if (input.up) {
-        this.tongue_angle_deg = Math.max(this.tongue_angle_deg - step, -cfg.frog_tongue_angle_limit_up_deg)
-      } else if (input.down) {
-        this.tongue_angle_deg = Math.min(this.tongue_angle_deg + step, cfg.frog_tongue_angle_limit_down_deg)
-      }
-      if (input.eat) {
-        this.state = FrogState.EAT
-        this.eat_step = 0
-        this.eat_timer_ms = 0
-        p.force_x = 0
-      }
-    }
-    if (this.state === FrogState.EAT) this._updateEat(dt_ms)
 
     // --- Integrate + collide ---
     const prevX = p.p_x
@@ -154,55 +201,42 @@ export class Frog {
     const maxX = level.width - this.w
     if (p.p_x > maxX) { p.p_x = maxX; p.v_x = Math.min(0, p.v_x) }
 
-    // --- Derive pose ---
-    if (this.state !== FrogState.EAT) {
-      this.state = this.grounded ? FrogState.REST : p.v_y < 0 ? FrogState.JUMP_UP : FrogState.JUMP_DOWN
-    }
     this._syncSprites()
   }
 
-  _updateEat(dt_ms) {
+  // Bounce off a stomped enemy
+  bounce(high) {
+    this.physics.v_y = -(high ? this.cfg.stomp_bounce_high : this.cfg.stomp_bounce)
+    this.jumping = true
+    this.grounded = false
+    this.coyote_ms = 0
+  }
+
+  _updateTongue(dt_ms) {
     const { cfg } = this
-    this.eat_timer_ms += dt_ms
-    const reloading = this.eat_step >= TONGUE_SEQUENCE.length
+    this.tongue_timer_ms += dt_ms
+    const reloading = this.tongue_step >= TONGUE_SEQUENCE.length
     const limit = reloading ? cfg.frog_tongue_reload_ms : cfg.frog_tongue_action_ms
-    if (this.eat_timer_ms > limit) {
-      this.eat_timer_ms = 0
-      this.eat_step += 1
-      if (reloading) {
-        this.eat_step = 0
-        this.state = FrogState.REST
-      }
+    if (this.tongue_timer_ms > limit) {
+      this.tongue_timer_ms = 0
+      this.tongue_step = reloading ? -1 : this.tongue_step + 1
     }
   }
 
   // Update sprite animation states / positions from the simulation state.
   _syncSprites() {
     const dir = this.dir
-    switch (this.state) {
-      case FrogState.REST:
-        this.body.state = `rest ${dir}`
-        this.crosshairs.state = 'on'
-        this.tongue.state = `${dir} 0`
-        break
-      case FrogState.JUMP_UP:
-        this.body.state = `jump up ${dir}`
-        this.crosshairs.state = 'off'
-        this.tongue.state = `${dir} 0`
-        break
-      case FrogState.JUMP_DOWN:
-        this.body.state = `jump down ${dir}`
-        this.crosshairs.state = 'off'
-        this.tongue.state = `${dir} 0`
-        break
-      case FrogState.EAT: {
-        const frame = this.eat_step < TONGUE_SEQUENCE.length ? TONGUE_SEQUENCE[this.eat_step] : 0
-        this.body.state = `eat ${dir}`
-        this.crosshairs.state = 'on'
-        this.tongue.state = `${dir} ${frame}`
-        break
-      }
+    if (this.dead) {
+      this.body.state = `smash ${dir}`
+      this.crosshairs.state = 'off'
+    } else if (this.grounded) {
+      this.body.state = `${this.tongueExtending ? 'eat' : 'rest'} ${dir}`
+      this.crosshairs.state = 'on'
+    } else {
+      this.body.state = `${this.physics.v_y < 0 ? 'jump up' : 'jump down'} ${dir}`
+      this.crosshairs.state = 'on'
     }
+    this.tongue.state = `${dir} ${this.dead ? 0 : this.tongueFrame}`
 
     // Body sprite: bottom-center aligned to the hitbox, whatever the pose.
     const m = this.body.mask()
@@ -226,14 +260,17 @@ export class Frog {
     const sn = Math.sin(theta)
 
     this.tongue.p_y = eatTop + eat.s_height * 0.4 * s
+    this.mouth.y = this.tongue.p_y
 
     if (this.is_right) {
       this.tongue.p_x = eatLeft + eat.s_width * 0.6 * s
+      this.mouth.x = this.tongue.p_x
       this.crosshairs.p_x = this.tongue.p_x + R * c - cross_w / 2
       this.crosshairs.p_y = this.tongue.p_y + R * sn
       this.tongue.rotation = theta
     } else {
       this.tongue.p_x = eatLeft + eat.s_width * 0.4 * s
+      this.mouth.x = this.tongue.p_x
       this.crosshairs.p_x = this.tongue.p_x - R * c - cross_w / 2
       this.crosshairs.p_y = this.tongue.p_y + R * sn
       this.tongue.p_x -= len_tongue * c
@@ -243,8 +280,28 @@ export class Frog {
   }
 
   draw(ctx) {
-    this.tongue.draw(ctx)
-    this.crosshairs.draw(ctx)
-    this.body.draw(ctx)
+    const blink = this.invuln_ms > 0 && Math.floor(this.invuln_ms / 80) % 2 === 0
+    if (!blink) {
+      this.tongue.draw(ctx)
+      this.crosshairs.draw(ctx)
+      this.body.draw(ctx)
+    }
+    if (this.shield && !this.dead) this._drawShield(ctx)
+  }
+
+  _drawShield(ctx) {
+    const cx = this.x + this.w / 2
+    const cy = this.y + this.h / 2
+    const r = Math.max(this.w, this.h) * 0.72
+    const pulse = 1 + 0.04 * Math.sin(performance.now() / 150)
+    ctx.save()
+    ctx.fillStyle = 'rgba(255,240,130,0.16)'
+    ctx.strokeStyle = 'rgba(255,240,130,0.75)'
+    ctx.lineWidth = 2.5
+    ctx.beginPath()
+    ctx.arc(cx, cy, r * pulse, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.stroke()
+    ctx.restore()
   }
 }

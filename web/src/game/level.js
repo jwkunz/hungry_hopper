@@ -31,6 +31,16 @@ export function createLevel1() {
     [300, 220], [1650, 180], [2900, 200], [4000, 220], [5100, 240],
   ].map(([x, w]) => ({ x, w }))
 
+  // Enemies and pickups: [centre x, centre y, patrol range]
+  const mosquitos = [
+    [700, 330, 140], [1500, 300, 160], [2020, 190, 120], [2750, 340, 160],
+    [3300, 300, 140], [4000, 330, 160], [4700, 320, 150], [5000, 280, 120],
+  ].map(([x, y, range]) => ({ x, y, range }))
+  // Shield fireflies: [centre x, centre y]
+  const fireflies = [
+    [870, 205], [1990, 195], [3065, 215], [4190, 205],
+  ].map(([x, y]) => ({ x, y }))
+
   const solids = [
     ...segments.map((s) => ({ x: s.x, y: GROUND_Y, w: s.w, h: GROUND_DEPTH })),
     ...leaves.map((l) => ({ x: l.x, y: l.y, w: l.w, h: 14, oneWay: true })),
@@ -47,6 +57,8 @@ export function createLevel1() {
     segments,
     leaves,
     puddles,
+    mosquitos,
+    fireflies,
     solids,
   }
 }

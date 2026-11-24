@@ -20,6 +20,8 @@ export class Sprite {
     this.p_y = p_y
     this.scale = scale
     this.rotation = rotation
+    this.flip = false // mirror horizontally (around the sprite's own box)
+    this.alpha = 1
   }
 
   mask(name = this.state) {
@@ -32,6 +34,11 @@ export class Sprite {
     ctx.save()
     ctx.translate(this.p_x, this.p_y)
     ctx.rotate(this.rotation)
+    ctx.globalAlpha = this.alpha
+    if (this.flip) {
+      ctx.translate(m.s_width * this.scale, 0)
+      ctx.scale(-1, 1)
+    }
     ctx.drawImage(
       this.img,
       m.s_x, m.s_y, m.s_width, m.s_height,

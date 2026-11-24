@@ -54,3 +54,38 @@ export function moveAndCollide(body, w, h, prevX, prevY, solids) {
   body.p_y = y
   return { grounded, hitCeiling }
 }
+
+// ---- Combat helpers ----
+
+export const rectsOverlap = (a, b) =>
+  a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y
+
+// Does the segment (x1,y1)-(x2,y2), thickened by `pad` on every side, touch
+// rect r? (Slab method on the padded rect.)
+export function segmentHitsRect(x1, y1, x2, y2, r, pad = 0) {
+  let t0 = 0
+  let t1 = 1
+  const axes = [
+    [x1, x2 - x1, r.x - pad, r.x + r.w + pad],
+    [y1, y2 - y1, r.y - pad, r.y + r.h + pad],
+  ]
+  for (const [p, d, min, max] of axes) {
+    if (Math.abs(d) < 1e-9) {
+      if (p < min || p > max) return false
+    } else {
+      let ta = (min - p) / d
+      let tb = (max - p) / d
+      if (ta > tb) [ta, tb] = [tb, ta]
+      t0 = Math.max(t0, ta)
+      t1 = Math.min(t1, tb)
+      if (t0 > t1) return false
+    }
+  }
+  return true
+}
+
+// Was this a stomp? The frog must have been moving down (or level) and its
+// feet must have started above the middle of the enemy.
+export function isStomp(prevBottom, prevVy, rect, frac = 0.5) {
+  return prevVy >= 0 && prevBottom <= rect.y + rect.h * frac
+}

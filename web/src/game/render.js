@@ -95,3 +95,48 @@ export function drawWorld(ctx, level, cam, cfg) {
   ctx.lineTo(level.goal_x + 5, level.ground_y - 54)
   ctx.fill()
 }
+
+export function drawHud(ctx, game) {
+  const { cfg } = game
+  ctx.save()
+  ctx.font = 'bold 22px system-ui, sans-serif'
+  ctx.textAlign = 'right'
+  ctx.lineWidth = 4
+  ctx.strokeStyle = 'rgba(0,0,0,.65)'
+  ctx.fillStyle = '#fff'
+  const txt = `SCORE ${String(game.score).padStart(6, '0')}`
+  ctx.strokeText(txt, cfg.view_w - 16, 32)
+  ctx.fillText(txt, cfg.view_w - 16, 32)
+  if (game.frog.shield) {
+    ctx.font = 'bold 15px system-ui, sans-serif'
+    ctx.fillStyle = '#ffe97a'
+    ctx.strokeText('◉ SHIELD', cfg.view_w - 16, 54)
+    ctx.fillText('◉ SHIELD', cfg.view_w - 16, 54)
+  }
+  ctx.restore()
+}
+
+// Hitboxes and the tongue segment (enable with ?debug in the URL)
+export function drawDebug(ctx, game) {
+  ctx.save()
+  ctx.lineWidth = 1
+  ctx.strokeStyle = '#0f0'
+  const f = game.frog.hitbox
+  ctx.strokeRect(f.x, f.y, f.w, f.h)
+  ctx.strokeStyle = '#f0f'
+  for (const e of game.entities) {
+    const h = e.hitbox
+    ctx.strokeRect(h.x, h.y, h.w, h.h)
+  }
+  const seg = game.frog.tongueSegment()
+  if (seg) {
+    ctx.strokeStyle = '#ff0'
+    ctx.lineWidth = game.cfg.tongue_thickness
+    ctx.globalAlpha = 0.35
+    ctx.beginPath()
+    ctx.moveTo(seg.x1, seg.y1)
+    ctx.lineTo(seg.x2, seg.y2)
+    ctx.stroke()
+  }
+  ctx.restore()
+}

@@ -41,7 +41,9 @@ export default function GameCanvas() {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     const detachKeys = attachKeyboard(input)
-    const game = new Game()
+    const debug = new URLSearchParams(window.location.search).has('debug')
+    const game = new Game(CONFIG, undefined, { debug })
+    window.__game = game // handy for debugging / tests
 
     let raf = 0
     let last = null

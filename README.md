@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.1.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.2.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -13,8 +13,13 @@ version 1.0.0 and lives on in git as the `v1.0.0` tag.
 | --- | --- |
 | ← / → (or ◀ ▶ buttons) | Walk left / right |
 | F (or JUMP) | Jump — hold for a higher jump |
-| Space (or TONGUE) | Shoot tongue (eat) |
+| Space (or TONGUE) | Shoot tongue — on the ground or in mid-air |
 | ↑ / ↓ (or ▲ ▼ buttons) | Aim the tongue up / down |
+
+**Rules:** eat enemies with the tongue, or land on top of them to stomp. Any
+other contact kills you instantly — unless you hold a **shield** from a glowing
+firefly, which absorbs one hit. Falling into a pit is always fatal. Add
+`?debug` to the URL to see hitboxes.
 
 The on-screen buttons are always shown so the game works on touch devices
 (it is intended to be embedded in an Android app).
@@ -58,6 +63,7 @@ in the repo go to **Settings → Pages → Build and deployment → Source** and
 ## Project layout
 
 ```
+tools/                   Asset helper scripts (e.g. make_mosquito_atlas.py)
 PLAN.md                  Game vision, mechanics and milestone roadmap
 .github/workflows/       Builds + deploys to GitHub Pages on push to main
 web/                     All web content
@@ -73,10 +79,11 @@ web/                     All web content
     game/                Framework-free game core (no React in here)
       config.js          Tunable constants
       engine.js          Game class: fixed-step update, camera, draw
-      frog.js            Frog: movement/jump/tongue state machine
-      collision.js       AABB vs solids and one-way platforms
+      frog.js            Frog: movement, jump, tongue, shield, death
+      entities.js        Enemies and pickups (Mosquito, Firefly)
+      collision.js       World collision + tongue/stomp/overlap tests
       level.js           Level 1 data (ground, leaves, puddles)
-      render.js          Placeholder background/world drawing
+      render.js          Placeholder world art, HUD, debug overlay
       sprite.js, physics.js, input.js
     assets/              sprites (frog in use; creatures, sounds, music not yet)
 ```
@@ -100,6 +107,13 @@ single-file build. Import them when the audio code is added (consider
 compressing to `.ogg`/`.mp3` first).
 
 ## Changelog
+
+### 2.2.0
+- Tongue now works in mid-air; its hit area follows the animation and aim angle.
+- Mosquito enemies (patrol/hover). Eat them with the tongue (+200) or stomp them (+100).
+- One-hit death; firefly pickups grant a one-hit shield. Death hop and respawn.
+- Score, floating popups, HUD; `?debug` hitbox overlay.
+- More tests (tongue/stomp geometry, entity placement).
 
 ### 2.1.0
 - Added `PLAN.md` (vision + roadmap) and moved all web content into `web/`.

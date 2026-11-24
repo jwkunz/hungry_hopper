@@ -27,6 +27,19 @@ export const CONFIG = {
   frog_tongue_angle_limit_up_deg: 13,
   frog_tongue_angle_limit_down_deg: 4,
 
+  tongue_thickness: 16, // hit-test thickness of the tongue
+
+  // Combat
+  stomp_bounce: 430, // upward speed after stomping an enemy
+  stomp_bounce_high: 620, // ...while holding jump
+  invuln_ms: 1500, // grace period after a shield absorbs a hit
+  death_ms: 1000, // pause on death before respawning
+  death_hop: 520, // upward speed of the death hop
+  points_eat: 200,
+  points_stomp: 100,
+  points_pickup: 50,
+  active_margin: 500, // enemies only move within this distance of the screen
+
   // Camera
   camera_lead: 0.4, // frog sits this fraction across the screen
   camera_smooth: 8, // higher = snappier follow
