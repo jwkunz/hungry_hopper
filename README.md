@@ -2,6 +2,8 @@
 
 A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
+## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
+
 **Current version: 2.0.0** (React edition). The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
@@ -44,7 +46,7 @@ needs to be shipped. Only assets that are `import`ed by the code are bundled
 *Actions → Run workflow*). It installs dependencies, runs `npm run build`, and
 publishes the single HTML file as `index.html` on GitHub Pages. One-time setup:
 in the repo go to **Settings → Pages → Build and deployment → Source** and choose
-**GitHub Actions**. The site will be at `https://<user>.github.io/hungry_hopper/`.
+**GitHub Actions**. The live site is at <https://jwkunz.github.io/hungry_hopper/>.
 
 ## Project layout
 
