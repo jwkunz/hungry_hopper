@@ -1,0 +1,30 @@
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body, #root { margin: 0; height: 100%; background: #050a07; color: #ddd;
+  font-family: system-ui, sans-serif; overflow: hidden; overscroll-behavior: none; }
+body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+
+.app { position: relative; height: 100dvh; width: 100vw; }
+.stage { height: 100%; width: 100%; display: flex; align-items: center; justify-content: center; touch-action: none; }
+.viewport { position: relative; background: #000; }
+.viewport canvas { display: block; }
+.version { position: absolute; top: 4px; left: 8px; font-size: .7rem; opacity: .45; pointer-events: none; }
+
+/* ---- on-screen controls (overlaid on the canvas) ---- */
+.touch { position: absolute; inset: 0; pointer-events: none; --u: clamp(46px, 11vmin, 92px); }
+.cluster { position: absolute; bottom: 4%; display: flex; align-items: flex-end; gap: calc(var(--u) * .25); }
+.cluster.left { left: 3%; }
+.cluster.right { right: 3%; }
+.aim { display: flex; flex-direction: column; gap: calc(var(--u) * .2); }
+
+.pad { pointer-events: auto; touch-action: none; cursor: pointer; font: 700 calc(var(--u) * .3) system-ui, sans-serif;
+  color: #fff; background: rgba(255,255,255,.16); border: 2px solid rgba(255,255,255,.45);
+  border-radius: 50%; width: var(--u); height: var(--u); display: grid; place-items: center;
+  backdrop-filter: blur(2px); padding: 0; }
+.pad.dir { width: calc(var(--u) * 1.15); height: calc(var(--u) * 1.15); font-size: calc(var(--u) * .5); }
+.pad.small { width: calc(var(--u) * .62); height: calc(var(--u) * .62); font-size: calc(var(--u) * .26); }
+.pad.action { width: calc(var(--u) * 1.2); height: calc(var(--u) * 1.2); font-size: calc(var(--u) * .22); letter-spacing: .03em; }
+.pad.jump { background: rgba(80,200,120,.35); border-color: rgba(120,255,160,.7); }
+.pad.eat { background: rgba(230,100,130,.35); border-color: rgba(255,150,170,.7); }
+.pad.down { background: rgba(255,255,255,.4); transform: scale(.94); }
+.pad.jump.down { background: rgba(80,200,120,.7); }
+.pad.eat.down { background: rgba(230,100,130,.7); }

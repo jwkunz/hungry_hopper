@@ -10,8 +10,10 @@ export class PhysicsODE2D {
     // Net force excluding gravity
     this.force_x = 0
     this.force_y = 0
-    // Linear drag coefficient (F = -c * v)
-    this.drag = 0
+    // Linear drag coefficients (F = -c * v), separate per axis so air control
+    // can be floaty without capping fall speed.
+    this.drag = 0 // x axis
+    this.drag_y = 0 // y axis
     this.mass = 1
     // Gravity acceleration in +y (down)
     this.g = 9.8
@@ -20,7 +22,7 @@ export class PhysicsODE2D {
   // Advance by dt seconds
   step(dt) {
     const drag_x = -this.drag * this.v_x
-    const drag_y = -this.drag * this.v_y
+    const drag_y = -this.drag_y * this.v_y
     this.a_x = (this.force_x + drag_x) / this.mass
     this.a_y = (this.force_y + drag_y) / this.mass + this.g
     this.v_x += this.a_x * dt
