@@ -19,6 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      # Turns Pages on (Actions source) if it isn't already. If your token
+      # lacks admin rights this step is skipped and Pages must be enabled once
+      # by hand: Settings -> Pages -> Source: GitHub Actions.
+      - uses: actions/configure-pages@v5
+        continue-on-error: true
+        with:
+          enablement: true
       - uses: actions/setup-node@v4
         with:
           node-version: 22
