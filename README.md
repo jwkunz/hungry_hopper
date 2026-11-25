@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.4.5** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.4.6** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -109,6 +109,9 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.4.6
+- Touch controls: the tongue aim ▲/▼ buttons now sit next to the ◀/▶ movement buttons (left cluster); TONGUE and JUMP stay on the right.
 
 ### 2.4.5
 - Mosquitos are aggressive: within `aggro_range` (480) they dive at you with speed = `chase_k` / distance (so they swoop faster the closer they get; clamped between `chase_min_speed` and `chase_max_speed`). They flap faster while chasing, lose interest if you hide underwater or die, and drift back to their patrol spot. Tune in `config.js`.

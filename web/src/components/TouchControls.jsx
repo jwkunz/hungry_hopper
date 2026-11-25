@@ -35,12 +35,12 @@ export default function TouchControls({ input }) {
       <div className="cluster left">
         <PadButton input={input} action="left" label="◀" aria="Move left" className="dir" />
         <PadButton input={input} action="right" label="▶" aria="Move right" className="dir" />
-      </div>
-      <div className="cluster right">
         <div className="aim">
           <PadButton input={input} action="up" label="▲" aria="Aim tongue up" className="small" />
           <PadButton input={input} action="down" label="▼" aria="Aim tongue down" className="small" />
         </div>
+      </div>
+      <div className="cluster right">
         <PadButton input={input} action="eat" label="TONGUE" aria="Shoot tongue" className="action eat" />
         <PadButton input={input} action="jump" label="JUMP" aria="Jump" className="action jump" />
       </div>
