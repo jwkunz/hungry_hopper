@@ -81,7 +81,7 @@ keyboard and touch buttons both just set flags on it.
 - [x] Local high score (localStorage)
 - [x] Audio shipped as small MP3s (`tools/convert_audio.sh`; WAV originals kept in `audio_source/`)
 - [x] Game-flow unit tests (title, lives, checkpoints, goal, shield)
-- [ ] Pause button (still to do)
+- [x] Pause button + settings menu (volume, mute, on-screen buttons toggle) (still to do)
 
 ### M4 — Environment *(2.4.0)*
 - [x] **Ponds**: swim (jump = kick up; head out of water = hop out), hidden from enemies when fully submerged, 7 s of air then you drown; air bar HUD, bubbles

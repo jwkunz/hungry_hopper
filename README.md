@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.4.6** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.5.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -109,6 +109,10 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.5.0
+- Pause and settings menu: ⏸ button (top right) or Esc / P pauses and freezes the game and audio. The game also auto-pauses when the tab or app goes to the background. The ⚙ button on the title screen opens the same panel.
+- Settings (saved in localStorage): music volume, effects volume, mute, and show/hide on-screen buttons. While paused: Resume, Restart run, Quit to title.
 
 ### 2.4.6
 - Touch controls: the tongue aim ▲/▼ buttons now sit next to the ◀/▶ movement buttons (left cluster); TONGUE and JUMP stay on the right.

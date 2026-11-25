@@ -1,6 +1,6 @@
 {
   "name": "hungry-hopper",
-  "version": "2.4.6",
+  "version": "2.5.0",
   "private": true,
   "description": "Hungry Hopper - a frog game made by the Kunzler family (React edition)",
   "type": "module",

@@ -180,13 +180,13 @@ export function drawHud(ctx, game) {
   ctx.fillStyle = '#fff'
   ctx.textAlign = 'right'
   const txt = `SCORE ${String(game.score).padStart(6, '0')}`
-  ctx.strokeText(txt, cfg.view_w - 16, 32)
-  ctx.fillText(txt, cfg.view_w - 16, 32)
+  ctx.strokeText(txt, cfg.view_w - 72, 32)
+  ctx.fillText(txt, cfg.view_w - 72, 32)
   if (game.frog.shield) {
     ctx.font = 'bold 15px system-ui, sans-serif'
     ctx.fillStyle = '#ffe97a'
-    ctx.strokeText('◉ SHIELD', cfg.view_w - 16, 54)
-    ctx.fillText('◉ SHIELD', cfg.view_w - 16, 54)
+    ctx.strokeText('◉ SHIELD', cfg.view_w - 72, 54)
+    ctx.fillText('◉ SHIELD', cfg.view_w - 72, 54)
   }
   ctx.restore()
 }

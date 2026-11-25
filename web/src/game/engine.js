@@ -44,6 +44,7 @@ export class Game {
     this.prevJump = false
     this.prevAny = false
     this.tapQueued = false
+    this.paused = false
 
     const hb = frogHitbox(cfg)
     this.frog = new Frog(cfg, level.spawn_x, level.ground_y - hb.h - 1)
@@ -58,8 +59,35 @@ export class Game {
     this.tapQueued = true
   }
 
+  // Pause freezes the simulation (only while actually playing or dying).
+  setPaused(p) {
+    this.paused = !!p && (this.state === GameState.PLAY || this.state === GameState.DYING)
+    this.accumulator = 0
+    this.prevAny = true // don't let a held button count as a fresh press on resume
+    this.prevJump = true
+    return this.paused
+  }
+
+  // Abandon the current run and go back to the title screen
+  quitToTitle() {
+    this.paused = false
+    this._newRun()
+    this._enter(GameState.TITLE)
+  }
+
+  // Start a fresh run from the beginning
+  restartRun() {
+    this.paused = false
+    this._newRun()
+    this._enter(GameState.PLAY)
+  }
+
   update(frame_ms, input) {
     const { cfg } = this
+    if (this.paused) {
+      this.tapQueued = false
+      return
+    }
     frame_ms = Math.min(frame_ms, cfg.max_frame_ms)
 
     const any = input.jump || input.eat

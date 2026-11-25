@@ -3,6 +3,7 @@
 // Browsers (and Android WebViews) only allow audio after a user gesture, so
 // call audio.unlock() from the first pointer/key event. Everything is a no-op
 // until then, and in environments without Web Audio (tests).
+import { settings } from './settings.js'
 import boing from '../assets/audio/boing.mp3'
 import slurp from '../assets/audio/frog_slurp.mp3'
 import gulp from '../assets/audio/frog_gulp.mp3'
@@ -33,7 +34,6 @@ const SFX = {
   grab: { src: zoink, volume: 0.6 },
 }
 const MUSIC = { title: musicTitle, play: musicPlay }
-const MUSIC_VOLUME = 0.35
 
 const MUTE_KEY = 'hungry_hopper.muted'
 
@@ -65,6 +65,16 @@ class AudioManager {
       this.master = this.ctx.createGain()
       this.master.gain.value = this.muted ? 0 : 1
       this.master.connect(this.ctx.destination)
+      this.music_bus = this.ctx.createGain()
+      this.sfx_bus = this.ctx.createGain()
+      this.music_bus.gain.value = settings.get('music')
+      this.sfx_bus.gain.value = settings.get('sfx')
+      this.music_bus.connect(this.master)
+      this.sfx_bus.connect(this.master)
+      settings.subscribe((v) => {
+        this.music_bus.gain.value = v.music
+        this.sfx_bus.gain.value = v.sfx
+      })
       // Preload everything (small after MP3 compression)
       Object.values(SFX).forEach((s) => this._load(s.src))
       Object.values(MUSIC).forEach((src) => this._load(src))
@@ -94,7 +104,7 @@ class AudioManager {
     g.gain.value = s.volume
     const node = this.ctx.createBufferSource()
     node.buffer = buf
-    node.connect(g).connect(this.master)
+    node.connect(g).connect(this.sfx_bus)
     node.start()
   }
 
@@ -112,11 +122,11 @@ class AudioManager {
     this._load(src).then((buf) => {
       if (!buf || this.music_name !== name || this.music_node) return
       const g = this.ctx.createGain()
-      g.gain.value = MUSIC_VOLUME
+      g.gain.value = 1
       const node = this.ctx.createBufferSource()
       node.buffer = buf
       node.loop = true
-      node.connect(g).connect(this.master)
+      node.connect(g).connect(this.music_bus)
       node.start()
       this.music_node = node
     })
@@ -126,6 +136,10 @@ class AudioManager {
     try { this.music_node?.stop() } catch { /* already stopped */ }
     this.music_node = null
   }
+
+  // Freeze / thaw all sound (used by pause and when the tab is hidden)
+  suspend() { try { this.ctx?.suspend() } catch { /* ignore */ } }
+  resume() { try { if (this.ctx?.state === 'suspended') this.ctx.resume() } catch { /* ignore */ } }
 
   setMuted(m) {
     this.muted = m

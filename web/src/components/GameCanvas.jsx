@@ -5,6 +5,10 @@ import { attachKeyboard, createInput } from '../game/input.js'
 import { audio } from '../game/audio.js'
 import TouchControls from './TouchControls.jsx'
 import SoundToggle from './SoundToggle.jsx'
+import { MenuButton, MenuPanel } from './Menu.jsx'
+import { settings } from '../game/settings.js'
+
+const playingNow = (g) => !!g && (g.state === 'play' || g.state === 'dying')
 
 const ASPECT = CONFIG.view_w / CONFIG.view_h
 
@@ -15,6 +19,10 @@ export default function GameCanvas() {
   const canvasRef = useRef(null)
   const gameRef = useRef(null)
   const [input] = useState(createInput)
+  const [menu, setMenu] = useState(false) // pause / settings open
+  const [inRun, setInRun] = useState(false)
+  const [playing, setPlaying] = useState(false)
+  const [touch, setTouch] = useState(settings.get('touch'))
   const [box, setBox] = useState({ w: CONFIG.view_w, h: CONFIG.view_h })
 
   // Fit the 16:9 box into the stage
@@ -39,6 +47,30 @@ export default function GameCanvas() {
     c.height = Math.round(box.h * dpr)
   }, [box])
 
+  useEffect(() => settings.subscribe((v) => setTouch(v.touch)), [])
+  useEffect(() => {
+    const id = setInterval(() => setPlaying(playingNow(gameRef.current)), 200)
+    return () => clearInterval(id)
+  }, [])
+
+  const openMenu = () => {
+    const g = gameRef.current
+    if (!g) return
+    const run = g.state === 'play' || g.state === 'dying'
+    setInRun(run)
+    g.setPaused(true)
+    audio.suspend()
+    Object.keys(input).forEach((k) => (input[k] = false))
+    setMenu(true)
+  }
+  const closeMenu = () => {
+    gameRef.current?.setPaused(false)
+    audio.resume()
+    setMenu(false)
+  }
+  const menuRef = useRef({ menu, openMenu, closeMenu })
+  menuRef.current = { menu, openMenu, closeMenu }
+
   // Keyboard + game loop
   useEffect(() => {
     const canvas = canvasRef.current
@@ -50,9 +82,22 @@ export default function GameCanvas() {
     const onKey = (e) => {
       unlock()
       if (e.key === 'm' || e.key === 'M') audio.toggleMuted()
+      if (e.key === 'Escape' || e.key === 'p' || e.key === 'P') {
+        const m = menuRef.current
+        if (m.menu) m.closeMenu()
+        else m.openMenu()
+      }
+    }
+    // Pause automatically when the tab / app goes to the background
+    const onHide = () => {
+      if (document.hidden && !menuRef.current.menu) {
+        const g = gameRef.current
+        if (g && (g.state === 'play' || g.state === 'dying')) menuRef.current.openMenu()
+      }
     }
     window.addEventListener('pointerdown', unlock)
     window.addEventListener('keydown', onKey)
+    document.addEventListener('visibilitychange', onHide)
     const debug = new URLSearchParams(window.location.search).has('debug')
     const game = new Game(CONFIG, undefined, { debug, onEvent: (e) => audio.handle(e) })
     gameRef.current = game
@@ -77,6 +122,7 @@ export default function GameCanvas() {
       detachKeys()
       window.removeEventListener('pointerdown', unlock)
       window.removeEventListener('keydown', onKey)
+      document.removeEventListener('visibilitychange', onHide)
       audio.music(null)
     }
   }, [input])
@@ -90,7 +136,16 @@ export default function GameCanvas() {
           onPointerDown={() => gameRef.current?.tap()}
         />
         <SoundToggle />
-        <TouchControls input={input} />
+        <MenuButton playing={playing} onOpen={openMenu} />
+        {touch && <TouchControls input={input} />}
+        {menu && (
+          <MenuPanel
+            inRun={inRun}
+            onResume={closeMenu}
+            onRestart={() => { gameRef.current.restartRun(); closeMenu() }}
+            onQuit={() => { gameRef.current.quitToTitle(); closeMenu() }}
+          />
+        )}
       </div>
     </div>
   )

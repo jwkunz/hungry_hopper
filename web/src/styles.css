@@ -32,3 +32,21 @@ body { user-select: none; -webkit-user-select: none; -webkit-touch-callout: none
 .sound { position: absolute; top: 6px; left: 50%; margin-left: -20px; z-index: 2; width: 40px; height: 40px; border-radius: 50%;
   border: 2px solid rgba(255,255,255,.4); background: rgba(0,0,0,.35); color: #fff; font-size: 20px;
   display: grid; place-items: center; padding: 0; cursor: pointer; touch-action: none; }
+
+/* ---- pause / settings ---- */
+.menu-btn { position: absolute; top: 6px; right: 8px; z-index: 2; width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.4); background: rgba(0,0,0,.35); color: #fff; font-size: 18px;
+  display: grid; place-items: center; padding: 0; cursor: pointer; touch-action: none; }
+.menu-backdrop { position: absolute; inset: 0; z-index: 10; background: rgba(0,0,0,.6); display: grid; place-items: center;
+  touch-action: none; pointer-events: auto; }
+.menu { width: min(86%, 380px); max-height: 94%; overflow: auto; background: #1d3a2c; border: 2px solid rgba(255,255,255,.35);
+  border-radius: 14px; padding: 14px 18px; color: #fff; font-size: clamp(13px, 3.2vmin, 16px); }
+.menu h2 { margin: 0 0 8px; text-align: center; letter-spacing: .08em; }
+.menu .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; }
+.menu .row input[type=range] { flex: 1; max-width: 55%; accent-color: #7fe0a0; }
+.menu .row input[type=checkbox] { width: 22px; height: 22px; accent-color: #7fe0a0; }
+.menu-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; justify-content: center; }
+.menu-actions button { flex: 1 1 auto; padding: 8px 12px; border-radius: 8px; border: 2px solid rgba(255,255,255,.4);
+  background: rgba(255,255,255,.12); color: #fff; font: inherit; font-weight: 700; cursor: pointer; }
+.menu-actions button.primary { background: rgba(80,200,120,.5); border-color: rgba(120,255,160,.8); }
+.menu .hint { margin: 8px 0 0; text-align: center; opacity: .6; font-size: .8em; }
