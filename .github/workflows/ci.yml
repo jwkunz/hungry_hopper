@@ -1,0 +1,98 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  version:
+    name: Version files agree
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check VERSION, web/package.json and (for a release) the tag
+        run: node scripts/version.mjs check "${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}"
+
+  web:
+    name: Tests and single-file build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - name: Check the build is one self-contained file
+        run: |
+          test "$(ls dist/hungry_hopper-v*.html | wc -l)" = 1
+          ! grep -E '<script[^>]+src=|<link[^>]+href=' dist/hungry_hopper-v*.html
+      - run: cp dist/hungry_hopper-v*.html "$RUNNER_TEMP/hungry_hopper.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hungry-hopper-html
+          path: ${{ runner.temp }}/hungry_hopper.html
+          if-no-files-found: error
+
+  android:
+    name: Android debug APK
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build APK (Gradle builds the web page the app bundles)
+        run: ./gradlew :app:assembleDebug --no-daemon
+        working-directory: Android
+      - run: cp Android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/hungry-hopper-debug.apk"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hungry-hopper-apk
+          path: ${{ runner.temp }}/hungry-hopper-debug.apk
+          if-no-files-found: error
+
+  release:
+    name: Publish GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [version, web, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          mv artifacts/hungry_hopper.html "hungry-hopper-$TAG.html"
+          mv artifacts/hungry-hopper-debug.apk "hungry-hopper-$TAG-debug.apk"
+          gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --title "Hungry Hopper $TAG" --generate-notes \
+            "hungry-hopper-$TAG.html#Hungry Hopper (single HTML file)" \
+            "hungry-hopper-$TAG-debug.apk#Hungry Hopper (Android debug APK)"
