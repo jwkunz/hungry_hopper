@@ -74,6 +74,17 @@ export const CONFIG = {
   spawn_clear_behind: 150,
   spawn_clear_ahead: 380,
   spawn_invuln_ms: 1500,
+  // M7: power-ups, grapple, combo
+  glide_ms: 9000,
+  glide_fall: 110, // max fall speed while gliding (px/s)
+  glide_speed_mul: 1.15,
+  fire_ms: 9000,
+  grapple_speed: 660,
+  grapple_hang_ms: 2400,
+  grapple_launch_x: 420,
+  grapple_launch_y: 640,
+  combo_window_ms: 3200,
+  combo_max: 5,
   points_boss_hit: 500,
   points_boss_kill: 2000,
   aggro_range: 480,

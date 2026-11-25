@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.7.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.8.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -123,6 +123,14 @@ so the single-file build stays around 2.7 MB.
 
 Creature art is drawn in code (`web/src/game/bestiary.js`); placements are in `level.js` (`bestiary`).
 
+## Tongue tricks and power-ups (M7)
+
+- **Grapple:** glowing knobs on vines (over both pits) are grapple anchors. Aim and shoot your tongue at one: it reels you in and you hang there. Press **JUMP** to fling yourself off (hold ◀/▶ to pick the direction), or ▼ to let go. You drop on your own after about 2.4 s.
+- **Dragonfly (glide):** eat or touch it, then **hold JUMP while falling** to glide down slowly and steer a little faster. About 9 s.
+- **Pepper (fire tongue):** eat or touch it for about 9 s of a burning tongue. It burns through beetle shells and the crane, and torches the briar sections around the one you hit.
+- **Combo:** kills (tongue, stomp or fire) within about 3 s of the last one chain: x2, x3 ... up to x5 points. Getting hurt breaks the chain.
+- Power-up timers and the combo show on the right of the HUD.
+
 ## The Fly Boss
 
 The end of level 1 is a boss arena (a puddle plus four leaf platforms). Cross the arena line and the door shuts behind you, the camera locks and the Fly Boss wakes up.
@@ -134,6 +142,12 @@ The end of level 1 is a boss arena (a puddle plus four leaf platforms). Cross th
 - Each hit makes it faster and its dives more frequent. Touching its body kills you; dying restarts the fight at full health. The goal flag only counts once the boss is beaten.
 
 ## Changelog
+
+### 2.8.0 (M7: tongue traversal and power-ups)
+- Grapple anchors: the tongue latches on, reels you in, you hang and can fling yourself off with JUMP. Two anchors sit over the pits.
+- Power-ups: dragonfly (glide) and pepper (fire tongue), with HUD timers, wings and a flaming tongue.
+- Combo multiplier (x2 to x5) for chained kills.
+- Not done yet from the M7 wish list: pulling light objects, spitting captured enemies and the glow-fly (light) power-up.
 
 ### 2.7.0 (M6: fly boss)
 - Fly Boss arena at the end of level 1: camera lock, boss with a weak-point eye (3 hits), erratic flight, telegraphed dives, escalating phases, mosquito minions, health pips in the HUD, death animation, and the goal gated on the boss.

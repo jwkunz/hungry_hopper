@@ -1,7 +1,6 @@
 import { CONFIG, frogHitbox } from './config.js'
 import { Frog } from './frog.js'
 import { createLevel1 } from './level.js'
-import { Firefly } from './entities.js'
 import { spawnEntities } from './spawn.js'
 import { drawBackground, drawWorld, drawWater, drawHud, drawDebug, drawScreen } from './render.js'
 import { rectsOverlap, segmentHitsRect, isStomp } from './collision.js'
@@ -148,6 +147,8 @@ export class Game {
   }
 
   _newRun() {
+    this.combo = 0
+    this.combo_ms = 0
     this.boss_defeated = false
     this.arena_active = false
     this.score = 0
@@ -172,7 +173,7 @@ export class Game {
     const lo = x - this.cfg.spawn_clear_behind
     const hi = x + this.cfg.spawn_clear_ahead
     this.entities = spawnEntities(this.level).filter(
-      (e) => (this.checkpoint < 0 || e.cx > x) && !(e.cx > lo && e.cx < hi && !(e instanceof Firefly)) &&
+      (e) => (this.checkpoint < 0 || e.cx > x) && !(e.cx > lo && e.cx < hi && e.kind === 'enemy') &&
         !(e.is_boss && this.boss_defeated),
     )
     this.boss = this.entities.find((e) => e.is_boss) ?? null
@@ -245,6 +246,8 @@ export class Game {
     this._drainFrogEvents(true)
     this._updateEntities(dt_ms)
     this._updateEaten()
+    this.combo_ms = Math.max(0, this.combo_ms - dt_ms)
+    if (this.combo_ms <= 0) this.combo = 0
 
     // Air: stay under too long and you drown
     if (frog.hidden) this._bubbles(dt_ms)
@@ -278,30 +281,49 @@ export class Game {
       let best = null
       let bestD = Infinity
       for (const e of this.entities) {
-        if (!e.alive || e.harmless || !(e.edible || e.lickable || e.deflects)) continue
+        if (!e.alive || (e.harmless && !e.grapple) || !(e.edible || e.lickable || e.deflects || e.grapple)) continue
         if (!segmentHitsRect(seg.x1, seg.y1, seg.x2, seg.y2, e.hitbox, cfg.tongue_thickness / 2)) continue
         const d = Math.hypot(e.cx - seg.x1, e.cy - seg.y1)
         if (d < bestD) { best = e; bestD = d }
       }
       if (best) {
-        if (best.deflects) {
-          // Armour: the tongue bounces off
-          if (this.last_deflect_shot !== frog.shot_id) {
-            this.last_deflect_shot = frog.shot_id
-            this._emit('cut')
-          }
-        } else if (best.lickable) {
-          // A shot cuts away at most ONE section: the nearest one it touched.
-          if (this.last_cut_shot !== frog.shot_id) {
-            this.last_cut_shot = frog.shot_id
-            best.lick()
-            this._emit('cut')
-            this._addScore(cfg.points_briar, best.cx, best.cy)
-          }
+        const fire = frog.fire_ms > 0
+        if (best.grapple) {
+          frog.startGrapple(best) // reel the frog in (the tongue becomes the rope)
         } else {
-          this._eat(best)
+          if (best.deflects) {
+            if (fire && !best.is_boss) {
+              // Fire burns right through armour
+              if (this.last_deflect_shot !== frog.shot_id) {
+                this.last_deflect_shot = frog.shot_id
+                best.die()
+                this._emit('stomp')
+                this._award(cfg.points_eat, best, 'BURNED!')
+              }
+            } else if (this.last_deflect_shot !== frog.shot_id) {
+              // Armour: the tongue bounces off
+              this.last_deflect_shot = frog.shot_id
+              this._emit('cut')
+            }
+          } else if (best.lickable) {
+            // A shot cuts away at most ONE section (the nearest one it touched);
+            // a fire tongue torches the neighbouring sections too.
+            if (this.last_cut_shot !== frog.shot_id) {
+              this.last_cut_shot = frog.shot_id
+              best.lick()
+              if (fire) {
+                for (const n of this.entities) {
+                  if (n !== best && n.alive && n.lickable && Math.hypot(n.cx - best.cx, n.cy - best.cy) < 90) n.lick()
+                }
+              }
+              this._emit('cut')
+              this._addScore(cfg.points_briar, best.cx, best.cy)
+            }
+          } else {
+            this._eat(best)
+          }
+          frog.retractTongue()
         }
-        frog.retractTongue()
       }
     }
 
@@ -419,7 +441,7 @@ export class Game {
     e.die()
     e.eaten = true
     this._emit('grab')
-    this._addScore(this.cfg.points_eat, e.cx, e.cy)
+    this._award(this.cfg.points_eat, e)
   }
 
   _updateEaten() {
@@ -452,19 +474,31 @@ export class Game {
     else e.die()
     this.frog.bounce(this.prevJump)
     this._emit('stomp')
-    this._addScore(this.cfg.points_stomp, e.cx, e.cy)
+    this._award(this.cfg.points_stomp, e)
   }
 
   _collect(e, viaTongue = false) {
     e.die()
     if (viaTongue) { e.eaten = true; e.swallow_ms = 0 }
-    this.frog.shield = true
-    this._emit('pickup')
-    this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'SHIELD!')
+    if (e.power === 'glide') {
+      this.frog.glide_ms = this.cfg.glide_ms
+      this._emit('powerup')
+      this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'GLIDE! (hold JUMP)')
+    } else if (e.power === 'fire') {
+      this.frog.fire_ms = this.cfg.fire_ms
+      this._emit('powerup')
+      this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'FIRE TONGUE!')
+    } else {
+      this.frog.shield = true
+      this._emit('pickup')
+      this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'SHIELD!')
+    }
   }
 
   // An enemy touched the frog the wrong way
   _hurt() {
+    this.combo = 0
+    this.combo_ms = 0
     const f = this.frog
     if (f.shield) {
       f.shield = false
@@ -478,6 +512,16 @@ export class Game {
 
   _emit(name) {
     if (this.onEvent) this.onEvent(name)
+  }
+
+  // Points for a kill, multiplied by the combo (tongue -> stomp -> tongue ...
+  // within a few seconds of each other).
+  _award(points, e, label) {
+    this.combo = this.combo_ms > 0 ? this.combo + 1 : 1
+    this.combo_ms = this.cfg.combo_window_ms
+    const mult = Math.min(this.cfg.combo_max, this.combo)
+    const pts = points * mult
+    this._addScore(pts, e.cx, e.cy, `${label ?? '+' + pts}${mult > 1 ? ` x${mult}` : ''}`)
   }
 
   _addScore(points, x, y, label) {

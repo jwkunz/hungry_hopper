@@ -74,6 +74,10 @@ export class Frog {
     p.g = this.cfg.gravity
     this.dead = false
     this.shield = false
+    this.glide_ms = 0 // dragonfly power: hold JUMP in the air to glide
+    this.fire_ms = 0 // pepper power: the tongue burns
+    this.gliding = false
+    this.grapple = null // { x, y, phase: 'reel' | 'hang', ms }
     this.invuln_ms = 0
     this.is_right = true
     this.grounded = false
@@ -174,6 +178,12 @@ export class Frog {
     this.invuln_ms = Math.max(0, this.invuln_ms - dt_ms)
     this.jump_buffer_ms = Math.max(0, this.jump_buffer_ms - dt_ms)
     this.coyote_ms = this.grounded ? cfg.coyote_ms : Math.max(0, this.coyote_ms - dt_ms)
+    this.glide_ms = Math.max(0, this.glide_ms - dt_ms)
+    this.fire_ms = Math.max(0, this.fire_ms - dt_ms)
+    if (this.grapple) {
+      this._updateGrapple(dt_ms, input, level)
+      return
+    }
 
     // --- Tongue: aim, fire, animate (works on the ground and in the air) ---
     if (!this.tongueExtending) {
@@ -245,6 +255,14 @@ export class Frog {
       p.v_y = -cfg.jump_speed * cfg.jump_cut
     }
 
+    // --- Dragonfly glide: hold JUMP while falling ---
+    this.gliding = false
+    if (this.glide_ms > 0 && !this.grounded && !this.in_water && input.jump && p.v_y > cfg.glide_fall) {
+      p.v_y = cfg.glide_fall
+      this.gliding = true
+      if (dirInput !== 0) p.force_x = dirInput * speed * cfg.glide_speed_mul * p.drag
+    }
+
     // --- Integrate + collide ---
     const prevX = p.p_x
     const prevY = p.p_y
@@ -267,6 +285,85 @@ export class Frog {
     const maxX = level.width - this.w
     if (p.p_x > maxX) { p.p_x = maxX; p.v_x = Math.min(0, p.v_x) }
 
+    this._syncSprites()
+  }
+
+  // The tongue stuck to a grapple anchor: reel the frog in, then hang there.
+  startGrapple(anchor) {
+    if (this.grapple || this.dead) return
+    this.grapple = { x: anchor.cx, y: anchor.cy, phase: 'reel', ms: 0 }
+    this.tongue_step = -1
+    this.grounded = false
+    this.jumping = false
+    this.is_right = anchor.cx >= this.x + this.w / 2
+    this.events.push('grapple')
+  }
+
+  _releaseGrapple(input, launch) {
+    const { cfg, physics: p } = this
+    this.grapple = null
+    if (launch) {
+      const dir = (input.right ? 1 : 0) - (input.left ? 1 : 0) || (this.is_right ? 1 : -1)
+      p.v_x = dir * cfg.grapple_launch_x
+      p.v_y = -cfg.grapple_launch_y
+      this.is_right = dir > 0
+      this.jumping = true
+      this.events.push('jump')
+    } else {
+      p.v_x *= 0.3
+      p.v_y = Math.max(p.v_y, 0)
+    }
+    this.coyote_ms = 0
+    this.jump_buffer_ms = 0
+    // brief reload so the tongue cannot be spammed straight away
+    this.tongue_step = TONGUE_SEQUENCE.length
+    this.tongue_timer_ms = 0
+  }
+
+  _updateGrapple(dt_ms, input, level) {
+    const { cfg, physics: p } = this
+    const dt = dt_ms / 1000
+    const g = this.grapple
+    g.ms += dt_ms
+    this.hidden = false
+    this.in_water = false
+    p.drag = 0
+    p.drag_y = 0
+    p.g = 0
+    p.force_x = p.force_y = 0
+
+    if (this.jump_buffer_ms > 0) return this._releaseGrapple(input, true) // fling!
+    if (input.down && g.ms > 200) return this._releaseGrapple(input, false) // let go
+
+    const cx = this.x + this.w / 2
+    const cy = this.y + this.h * 0.35
+    const dx = g.x - cx
+    const dy = g.y - cy
+    const d = Math.hypot(dx, dy)
+    if (g.phase === 'reel') {
+      if (d < 22) {
+        g.phase = 'hang'
+        g.ms = 0
+        p.p_x = g.x - this.w / 2
+        p.p_y = g.y - this.h * 0.35
+        p.v_x = p.v_y = 0
+      } else if (g.ms > 1200) {
+        return this._releaseGrapple(input, false) // blocked on the way
+      } else {
+        p.v_x = (dx / d) * cfg.grapple_speed
+        p.v_y = (dy / d) * cfg.grapple_speed
+        this.is_right = dx >= 0
+      }
+    } else {
+      p.v_x = p.v_y = 0
+      if (g.ms > cfg.grapple_hang_ms) return this._releaseGrapple(input, false)
+    }
+    const prevX = p.p_x
+    const prevY = p.p_y
+    p.step(dt)
+    moveAndCollide(p, this.w, this.h, prevX, prevY, level.solids)
+    this.grounded = false
+    this.anim_ms += dt_ms
     this._syncSprites()
   }
 
@@ -363,6 +460,9 @@ export class Frog {
 
   draw(ctx) {
     const blink = this.invuln_ms > 0 && Math.floor(this.invuln_ms / 80) % 2 === 0
+    if (this.glide_ms > 0 && !this.grounded && !this.dead) this._drawWings(ctx)
+    if (this.grapple) this._drawRope(ctx)
+    if (this.fire_ms > 0 && !this.dead) this._drawFire(ctx)
     if (!blink) {
       // Frame 0 is just the tucked-in root of the tongue; drawing it leaves a
       // stray pink blob floating off the body in the jump poses.
@@ -371,6 +471,64 @@ export class Frog {
       this.body.draw(ctx)
     }
     if (this.shield && !this.dead) this._drawShield(ctx)
+  }
+
+  _drawRope(ctx) {
+    const g = this.grapple
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = '#d9506a'
+    ctx.lineWidth = 9
+    ctx.beginPath(); ctx.moveTo(this.mouth.x, this.mouth.y); ctx.lineTo(g.x, g.y); ctx.stroke()
+    ctx.strokeStyle = 'rgba(255,200,210,.6)'
+    ctx.lineWidth = 3
+    ctx.beginPath(); ctx.moveTo(this.mouth.x, this.mouth.y - 2); ctx.lineTo(g.x, g.y - 2); ctx.stroke()
+    ctx.restore()
+  }
+
+  // Translucent dragonfly wings while the glide power-up is active
+  _drawWings(ctx) {
+    const cx = this.x + this.w / 2
+    const cy = this.y + this.h * 0.35
+    const flap = this.gliding ? 0.15 * Math.sin(performance.now() / 60) : Math.sin(performance.now() / 45) * 0.5
+    ctx.save()
+    ctx.translate(cx, cy)
+    ctx.fillStyle = 'rgba(200,245,255,.5)'
+    ctx.strokeStyle = 'rgba(120,200,220,.8)'
+    ctx.lineWidth = 1.5
+    for (const [dx, a] of [[-8, -0.5], [8, 0.5]]) {
+      for (const k of [0, 1]) {
+        ctx.save()
+        ctx.translate(dx, 0)
+        ctx.rotate(a * (k ? 1.6 : 1) + flap * (dx < 0 ? -1 : 1))
+        ctx.beginPath(); ctx.ellipse(0, -26 - k * 4, 7, 24, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke()
+        ctx.restore()
+      }
+    }
+    ctx.restore()
+  }
+
+  // Burning glow along the tongue (pepper power-up)
+  _drawFire(ctx) {
+    const seg = this.tongueSegment()
+    if (!seg) return
+    const t = performance.now()
+    ctx.save()
+    ctx.lineCap = 'round'
+    ctx.strokeStyle = 'rgba(255,110,20,.45)'
+    ctx.lineWidth = 26
+    ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke()
+    ctx.strokeStyle = 'rgba(255,220,90,.55)'
+    ctx.lineWidth = 12
+    ctx.beginPath(); ctx.moveTo(seg.x1, seg.y1); ctx.lineTo(seg.x2, seg.y2); ctx.stroke()
+    for (let i = 0; i < 4; i++) {
+      const k = (i + 1) / 5
+      const x = seg.x1 + (seg.x2 - seg.x1) * k + Math.sin(t / 60 + i) * 4
+      const y = seg.y1 + (seg.y2 - seg.y1) * k - 6 - Math.abs(Math.sin(t / 80 + i * 2)) * 8
+      ctx.fillStyle = 'rgba(255,160,40,.8)'
+      ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.restore()
   }
 
   _drawShield(ctx) {

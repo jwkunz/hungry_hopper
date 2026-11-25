@@ -33,6 +33,8 @@ const SFX = {
   cut: { src: hit, volume: 0.55 },
   grab: { src: zoink, volume: 0.6 },
   shriek: { src: hurt, volume: 0.5 },
+  grapple: { src: zoink, volume: 0.7 },
+  powerup: { src: pickup, volume: 0.9 },
   boss_hit: { src: hit, volume: 1.0 },
   boss_dead: { src: pickup, volume: 1.0 },
 }

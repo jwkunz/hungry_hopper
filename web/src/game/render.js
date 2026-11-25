@@ -188,6 +188,18 @@ export function drawHud(ctx, game) {
     ctx.strokeText('◉ SHIELD', cfg.view_w - 72, 54)
     ctx.fillText('◉ SHIELD', cfg.view_w - 72, 54)
   }
+  // Power-up timers and the combo
+  let hy = game.frog.shield ? 76 : 54
+  const line = (txt, color) => {
+    ctx.font = 'bold 15px system-ui, sans-serif'
+    ctx.fillStyle = color
+    ctx.strokeText(txt, cfg.view_w - 72, hy)
+    ctx.fillText(txt, cfg.view_w - 72, hy)
+    hy += 22
+  }
+  if (game.frog.glide_ms > 0) line(`GLIDE ${(game.frog.glide_ms / 1000).toFixed(0)}s`, '#8fe8ff')
+  if (game.frog.fire_ms > 0) line(`FIRE ${(game.frog.fire_ms / 1000).toFixed(0)}s`, '#ffa04a')
+  if (game.combo >= 2 && game.combo_ms > 0) line(`COMBO x${Math.min(cfg.combo_max, game.combo)}`, '#ffe97a')
   // Boss health: one eye per hit point, shown once the fight has begun
   const boss = game.boss
   if (boss && game.arena_active && boss.phase !== 'dormant' && !game.boss_defeated) {

@@ -104,10 +104,12 @@ beetle (armoured: belly-tongue or stomp) · pill bug (rolls) · more mosquitos
 - [x] 3 eye hits to kill, behaviour changes after each hit (speed, minion waves, hazards)
 - [x] Mosquito minion spawns; arena with leaves + puddles
 
-### M7 — Tongue traversal & power-ups
-- [ ] Grapple/swing from branches; pull light objects; spit captured enemies
-- [ ] Eat-to-power-up: glow fly (light), dragonfly (glide), pepper (fire), shield firefly
-- [ ] Combo multiplier (tongue → stomp → tongue)
+### M7 — Tongue traversal & power-ups (done in 2.8.0 except the items marked open)
+- [x] Grapple from vine anchors (reel in, hang, fling with JUMP)
+- [ ] Pull light objects; spit captured enemies (open)
+- [x] Eat-to-power-up: dragonfly (glide), pepper (fire), shield firefly
+- [ ] Glow fly (light) — needs dark areas first (M8) (open)
+- [x] Combo multiplier (tongue → stomp → tongue, x2…x5)
 
 ### M8 — Content & polish
 - [ ] Multiple levels / areas (marsh, bog, cypress forest, night storm, hive)

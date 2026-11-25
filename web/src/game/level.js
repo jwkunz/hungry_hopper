@@ -67,6 +67,13 @@ export function createLevel1() {
     owls: [[2250, 285]],
     cranes: [[3900, 90]],
   }
+  // M7 items: [x, y]. Dragonflies grant glide, peppers a fire tongue, anchors are
+  // grapple knobs (the pits at 2300-2500 and 4400-4600 are the intended use).
+  const items = {
+    dragonflies: [[1300, GROUND_Y - 150], [3400, GROUND_Y - 150]],
+    peppers: [[670, GROUND_Y - 128], [4390, GROUND_Y - 128]],
+    anchors: [[2400, GROUND_Y - 190], [4500, GROUND_Y - 190]],
+  }
   // Shield fireflies: [centre x, height above ground]
   const fireflies = [
     [870, 255], [1990, 265], [3065, 245], [4190, 255], [5190, 270],
@@ -98,6 +105,7 @@ export function createLevel1() {
     mosquitos,
     fireflies,
     bestiary,
+    items,
     // Final boss: lives in the arena at the end of the level. The arena locks
     // the camera to [x0, x0+view] once you pass `trigger`.
     boss: { x: 5300, y: GROUND_Y - 330, arena: { x0: 4640, x1: 5600, trigger: 4820 } },
