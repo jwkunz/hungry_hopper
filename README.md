@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.4.3** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.4.4** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -109,6 +109,9 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.4.4
+- Fixed a stray pink piece of tongue floating off the frog while jumping: the tucked-away tongue frame is no longer drawn (the tongue only draws while it is out). Added a draw test.
 
 ### 2.4.3
 - Briars are now made of sections. A tongue shot cuts only the section it touches (the nearest one), instead of shrinking the whole thicket. Thorn walls are 3 sections thick and 6 tall, so a frog-sized tunnel at ground level takes three shots; the rest of the wall stays. Cut sections crumble away; 10 points each.

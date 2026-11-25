@@ -185,3 +185,21 @@ test('walking squashes and bobs the body sprite; standing, airborne and hitbox a
   assert.ok(!f.grounded)
   assert.equal(f.body.sy, 1)
 })
+
+test('the tongue sprite is only drawn while the tongue is out (no stray stub when jumping)', () => {
+  const lv = createLevel1()
+  const f = new Frog(CONFIG, 300, lv.ground_y - 60)
+  const calls = []
+  const ctx = new Proxy({}, {
+    get: (_, k) => (k === 'drawImage' ? (img, sx, sy, sw, sh) => calls.push({ sx, sy, sw, sh }) : () => {}),
+    set: () => true,
+  })
+  const count = () => { calls.length = 0; f.draw(ctx); return calls.length }
+  const idle = count() // body + crosshairs
+  f.grounded = false; f.physics.v_y = -300; f._syncSprites() // mid-jump
+  assert.equal(count(), idle, 'jumping with the tongue tucked draws no tongue')
+  f.tongue_step = 3; f._syncSprites() // tongue out
+  assert.equal(count(), idle + 1, 'tongue drawn while extended')
+  f.tongue_step = -1; f._syncSprites()
+  assert.equal(count(), idle)
+})

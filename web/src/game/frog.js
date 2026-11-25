@@ -364,7 +364,9 @@ export class Frog {
   draw(ctx) {
     const blink = this.invuln_ms > 0 && Math.floor(this.invuln_ms / 80) % 2 === 0
     if (!blink) {
-      this.tongue.draw(ctx)
+      // Frame 0 is just the tucked-in root of the tongue; drawing it leaves a
+      // stray pink blob floating off the body in the jump poses.
+      if (this.tongueFrame > 0 && !this.dead) this.tongue.draw(ctx)
       this.crosshairs.draw(ctx)
       this.body.draw(ctx)
     }
