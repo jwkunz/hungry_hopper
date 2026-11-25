@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.5.1** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.6.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -108,7 +108,26 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 (generated from the original WAVs in `audio_source/` by `tools/convert_audio.sh`)
 so the single-file build stays around 2.7 MB.
 
+## Bestiary
+
+| Creature | Behaviour | How to beat it |
+|---|---|---|
+| Mosquito | Patrols; dives at you faster the closer it gets | Tongue it or stomp it |
+| Bat | Hangs up high; swoops in a U-arc through where you stood, then roosts | Tongue it in the dive, or stomp/tongue it when it passes low |
+| Owl | Dozes; eyes flare (warning), then a fast straight glide | Dodge the glide, then tongue or stomp it |
+| Mole | Mound shakes, then pops up briefly | Tongue or stomp it while it is up; harmless when hidden |
+| Beetle | Armoured: contact hurts and the tongue bounces off | Stomp to flip it, then tongue the helpless beetle before it rights itself |
+| Centipede | Long and low; speeds up when it spots you | Stomp or tongue it (jump early: it is long) |
+| Pill bug | Curls up, then rolls at you; rolling bugs cannot be stomped | Tongue it while it rolls, or stomp it when it uncurls |
+| Crane | Coils its neck (warning), then stabs along the ground | Tongue-proof; right after a stab its beak is stuck: tongue its head to eat it |
+
+Creature art is drawn in code (`web/src/game/bestiary.js`); placements are in `level.js` (`bestiary`).
+
 ## Changelog
+
+### 2.6.0 (M5: bestiary)
+- New creatures: bat, mole, beetle, centipede, pill bug, owl and crane (see the Bestiary table), placed through level 1.
+- Engine hooks: `harmless` (no contact), `deflects` (tongue bounces off armour) and `onStomp()` (custom stomp reaction).
 
 ### 2.5.1
 - Fix: respawning on a briar (or under a mosquito) and dying repeatedly. Checkpoint 2 sat inside a thicket. Now a safe zone is cleared around every respawn point (`spawn_clear_behind/ahead`) and you get 1.5 s of invulnerability after a death (`spawn_invuln_ms`).

@@ -94,7 +94,7 @@ keyboard and touch buttons both just set flags on it.
 - [x] Walk animation via code (squash & bob; the sprite sheet has no walk frames — real walk/hop frames would be a future art upgrade)
 - [ ] Sinking lily pads / tide timers (stretch)
 
-### M5 — Bestiary
+### M5 — Bestiary (done in 2.6.0: bat, mole, beetle, centipede, pill bug, owl, crane)
 Mole (pops from ground) · bat (swoops, hangs) · centipede (walls/ceilings) ·
 beetle (armoured: belly-tongue or stomp) · pill bug (rolls) · more mosquitos
 (stinger wind-up/strike) · other swamp creatures.

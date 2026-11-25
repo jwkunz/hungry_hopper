@@ -53,6 +53,16 @@ export function createLevel1() {
     [700, 130, 140], [1500, 160, 160], [2020, 270, 120], [2750, 120, 160],
     [3600, 150, 140], [4000, 130, 160], [4700, 140, 150], [5000, 180, 120],
   ].map(([x, above, range]) => ({ x, y: GROUND_Y - above, range }))
+  // Bestiary (M5): [x, extra]. Bats/owls: height above ground. Walkers: patrol range.
+  const bestiary = {
+    bats: [[1350, 250], [3400, 250], [4250, 240]],
+    moles: [[1100], [2850], [4300]],
+    beetles: [[620, 100], [2300, 120], [4420, 110]],
+    centipedes: [[2420, 110], [3080, 120], [5120, 100]],
+    pillbugs: [[1950, 90], [3180, 80], [5260, 90]],
+    owls: [[2250, 285], [4780, 290]],
+    cranes: [[1650, 80], [3900, 90]],
+  }
   // Shield fireflies: [centre x, height above ground]
   const fireflies = [
     [870, 255], [1990, 265], [3065, 245], [4190, 255],
@@ -83,6 +93,7 @@ export function createLevel1() {
     checkpoints,
     mosquitos,
     fireflies,
+    bestiary,
     solids,
     pondAt: (cx) => ponds.find((p) => cx > p.x && cx < p.x + p.w) ?? null,
     mudAt: (cx) => mud.some((m) => cx >= m.x && cx <= m.x + m.w),

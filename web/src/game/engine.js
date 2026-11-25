@@ -1,7 +1,8 @@
 import { CONFIG, frogHitbox } from './config.js'
 import { Frog } from './frog.js'
 import { createLevel1 } from './level.js'
-import { spawnEntities, Firefly } from './entities.js'
+import { Firefly } from './entities.js'
+import { spawnEntities } from './spawn.js'
 import { drawBackground, drawWorld, drawWater, drawHud, drawDebug, drawScreen } from './render.js'
 import { rectsOverlap, segmentHitsRect, isStomp } from './collision.js'
 import { loadHighScore, saveHighScore } from './storage.js'
@@ -253,13 +254,19 @@ export class Game {
       let best = null
       let bestD = Infinity
       for (const e of this.entities) {
-        if (!e.alive || !(e.edible || e.lickable)) continue
+        if (!e.alive || e.harmless || !(e.edible || e.lickable || e.deflects)) continue
         if (!segmentHitsRect(seg.x1, seg.y1, seg.x2, seg.y2, e.hitbox, cfg.tongue_thickness / 2)) continue
         const d = Math.hypot(e.cx - seg.x1, e.cy - seg.y1)
         if (d < bestD) { best = e; bestD = d }
       }
       if (best) {
-        if (best.lickable) {
+        if (best.deflects) {
+          // Armour: the tongue bounces off
+          if (this.last_deflect_shot !== frog.shot_id) {
+            this.last_deflect_shot = frog.shot_id
+            this._emit('cut')
+          }
+        } else if (best.lickable) {
           // A shot cuts away at most ONE section: the nearest one it touched.
           if (this.last_cut_shot !== frog.shot_id) {
             this.last_cut_shot = frog.shot_id
@@ -277,7 +284,7 @@ export class Game {
     // Body contacts: stomp, get hit, or collect
     const fb = frog.hitbox
     for (const e of this.entities) {
-      if (!e.alive || !rectsOverlap(fb, e.hitbox)) continue
+      if (!e.alive || e.harmless || !rectsOverlap(fb, e.hitbox)) continue
       if (e.kind !== 'pickup' && frog.hidden) continue // hiding underwater
       if (e.kind === 'pickup') {
         this._collect(e)
@@ -394,7 +401,8 @@ export class Game {
   }
 
   _stomp(e) {
-    e.die()
+    if (e.onStomp) e.onStomp()
+    else e.die()
     this.frog.bounce(this.prevJump)
     this._emit('stomp')
     this._addScore(this.cfg.points_stomp, e.cx, e.cy)
