@@ -203,3 +203,27 @@ test('the tongue sprite is only drawn while the tongue is out (no stray stub whe
   f.tongue_step = -1; f._syncSprites()
   assert.equal(count(), idle)
 })
+
+// ---- respawn safety ----
+test('respawning at any checkpoint is safe: no overlap, survives standing still', () => {
+  const g0 = mk()
+  g0.level.checkpoints.forEach((cp, i) => {
+    const g = mk()
+    start(g)
+    g.checkpoint = i
+    g.lives = 3
+    g.deaths = 1
+    g._resetWorld()
+    const f = g.frog
+    for (const e of g.entities) {
+      if (e.kind === 'briar' || e.kind === 'enemy') {
+        const overlap = f.x < e.cx + e.w / 2 && f.x + f.w > e.cx - e.w / 2
+        assert.ok(!overlap, `checkpoint ${i}: ${e.kind} overlaps spawn`)
+      }
+    }
+    for (let k = 0; k < 80 && g.state === 'play'; k++) g.update(16, { left: false, right: false, up: false, down: false, jump: false, eat: false })
+    assert.equal(g.state, 'play', `checkpoint ${i}: died while standing still after respawn`)
+    assert.equal(g.lives, 3)
+  })
+  assert.ok(g0.level.checkpoints.length > 0)
+})

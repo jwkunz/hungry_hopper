@@ -69,6 +69,11 @@ export const CONFIG = {
   // Enemy aggression: once you are inside aggro_range an enemy flies at you at
   // speed = chase_k / distance (inversely proportional: faster the closer it
   // gets), clamped to [chase_min_speed, chase_max_speed].
+  // Respawn safety: nothing hostile within this window of the spawn point,
+  // plus a short grace period so you can get your bearings.
+  spawn_clear_behind: 150,
+  spawn_clear_ahead: 380,
+  spawn_invuln_ms: 1500,
   aggro_range: 480,
   chase_k: 36000,
   chase_min_speed: 45,

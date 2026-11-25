@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.5.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.5.1** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -109,6 +109,9 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.5.1
+- Fix: respawning on a briar (or under a mosquito) and dying repeatedly. Checkpoint 2 sat inside a thicket. Now a safe zone is cleared around every respawn point (`spawn_clear_behind/ahead`) and you get 1.5 s of invulnerability after a death (`spawn_invuln_ms`).
 
 ### 2.5.0
 - Pause and settings menu: ⏸ button (top right) or Esc / P pauses and freezes the game and audio. The game also auto-pauses when the tab or app goes to the background. The ⚙ button on the title screen opens the same panel.

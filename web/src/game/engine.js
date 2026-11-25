@@ -1,7 +1,7 @@
 import { CONFIG, frogHitbox } from './config.js'
 import { Frog } from './frog.js'
 import { createLevel1 } from './level.js'
-import { spawnEntities } from './entities.js'
+import { spawnEntities, Firefly } from './entities.js'
 import { drawBackground, drawWorld, drawWater, drawHud, drawDebug, drawScreen } from './render.js'
 import { rectsOverlap, segmentHitsRect, isStomp } from './collision.js'
 import { loadHighScore, saveHighScore } from './storage.js'
@@ -164,7 +164,14 @@ export class Game {
     this.particles = []
     this.last_cut_shot = -1
     for (const l of this.level.leaves) { l.dip = 0; l.y = l.y0 }
-    this.entities = spawnEntities(this.level).filter((e) => this.checkpoint < 0 || e.cx > x)
+    // Keep what is ahead of the checkpoint, but carve a safe zone around the
+    // spawn point so you never respawn inside a briar or under a mosquito.
+    const lo = x - this.cfg.spawn_clear_behind
+    const hi = x + this.cfg.spawn_clear_ahead
+    this.entities = spawnEntities(this.level).filter(
+      (e) => (this.checkpoint < 0 || e.cx > x) && !(e.cx > lo && e.cx < hi && !(e instanceof Firefly)),
+    )
+    if (this.deaths > 0) this.frog.invuln_ms = this.cfg.spawn_invuln_ms // grace after a death
     this._snapCamera()
   }
 
