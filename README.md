@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.6.4** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.6.5** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -18,7 +18,7 @@ version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 **Rules:** eat enemies with the tongue, or land on top of them to stomp. Any
 other contact kills you instantly — unless you hold a **shield** from a glowing
-firefly, which absorbs one hit. Falling into a pit is always fatal. **Ponds** can be swum (JUMP kicks you up; with your head out it hops you onto land) and hide you from enemies — but you only have a few seconds of air. **Briars** kill on touch; cut them with the tongue — each shot removes just the one section it touches (aim at ground level to tunnel through a thorn wall in three shots; aim higher to open up a different spot). Mud slows you down; leaves sink a little under your weight. You have 3 lives and respawn at the last
+firefly, which absorbs one hit. Falling into a pit is always fatal. **Ponds** can be swum (JUMP kicks you up; with your head out it hops you onto land) and hide you from enemies — but you only have a few seconds of air. **Briars** kill on touch; cut them with the tongue — each shot removes just the one section it touches (thorn walls are one section thick, so one shot at ground level opens a frog-sized gap; aim higher to open a different spot). Mud slows you down; leaves sink a little under your weight. You have 3 lives and respawn at the last
 checkpoint flag; reach the red flag at the end to win. Tap the speaker button (or
 press **M**) to mute. Add `?debug` to the URL to see hitboxes.
 
@@ -124,6 +124,9 @@ so the single-file build stays around 2.7 MB.
 Creature art is drawn in code (`web/src/game/bestiary.js`); placements are in `level.js` (`bestiary`).
 
 ## Changelog
+
+### 2.6.5
+- Briar thickets are now one section thick (was three): one tongue shot at ground level opens a frog-sized gap in a thorn wall.
 
 ### 2.6.4
 - Bat shriek is smaller and one-directional: it faces you, the close-range blast only reaches ~60 px in front of its mouth, and a single shockwave travels toward you (shorter lifetime, 1.5 s).

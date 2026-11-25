@@ -87,7 +87,7 @@ keyboard and touch buttons both just set flags on it.
 - [x] **Ponds**: swim (jump = kick up; head out of water = hop out), hidden from enemies when fully submerged, 7 s of air then you drown; air bar HUD, bubbles
 - [x] Leaves dip a few pixels under the frog and spring back
 - [x] Mud patches slow walking and shave the jump
-- [x] **Briars**: lethal on touch (a shield absorbs it); built from sections — each tongue shot cuts only the section it touches (nearest first), so you carve a tunnel at the height you aim; walls are 3 sections thick, low patches are hoppable
+- [x] **Briars**: lethal on touch (a shield absorbs it); built from sections — each tongue shot cuts only the section it touches (nearest first), so you carve a tunnel at the height you aim; walls are 1 section thick (since 2.6.5), low patches are hoppable
 - [x] Tongue now hits the nearest thing first, so a briar shields what is behind it
 - [x] Parallax, drifting mist, ambient fireflies; level now written in heights above the ground
 - [x] Tuning pass (2.4.1): wide tongue aim (+60°/−35°), enemies are reeled in and swallowed
