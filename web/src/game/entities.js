@@ -44,7 +44,7 @@ export class Mosquito extends Entity {
     this.home_y = y
     this.range = range
     this.dir = -1
-    this.speed = 70 // patrol speed
+    this.speed = 50 // patrol speed
     this.vx = 0
     this.vy = 0
     this.mode = 'patrol' // 'patrol' | 'chase' | 'return'
@@ -97,8 +97,8 @@ export class Mosquito extends Entity {
         const hx = this.home_x - this.cx
         const hy = this.home_y - this.cy
         const hd = Math.max(1, Math.hypot(hx, hy))
-        dvx = (hx / hd) * 110
-        dvy = (hy / hd) * 110
+        dvx = (hx / hd) * 80
+        dvy = (hy / hd) * 80
         if (hd < 12) this.mode = 'patrol'
       } else {
         if (this.cx < this.home_x - this.range) this.dir = 1

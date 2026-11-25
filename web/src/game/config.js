@@ -75,9 +75,9 @@ export const CONFIG = {
   spawn_clear_ahead: 380,
   spawn_invuln_ms: 1500,
   aggro_range: 480,
-  chase_k: 36000,
-  chase_min_speed: 45,
-  chase_max_speed: 230,
+  chase_k: 24000,
+  chase_min_speed: 32,
+  chase_max_speed: 160,
   chase_turn: 5, // how quickly it steers (1/s)
   active_margin: 500, // enemies only move within this distance of the screen
 

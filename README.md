@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.6.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.6.1** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -124,6 +124,9 @@ so the single-file build stays around 2.7 MB.
 Creature art is drawn in code (`web/src/game/bestiary.js`); placements are in `level.js` (`bestiary`).
 
 ## Changelog
+
+### 2.6.1
+- Balance: bat swoops take ~1.5 s (was ~1 s) and bats fly home slower; mosquitos are slower (patrol 50, chase `chase_k` 24000 capped at 160 px/s, return 80).
 
 ### 2.6.0 (M5: bestiary)
 - New creatures: bat, mole, beetle, centipede, pill bug, owl and crane (see the Bestiary table), placed through level 1.

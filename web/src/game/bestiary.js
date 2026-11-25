@@ -101,7 +101,7 @@ export class Bat extends Critter {
         this.face = s.dx >= 0 ? 1 : -1
       }
     } else if (this.mode === 'swoop') {
-      this.u = Math.min(1, this.u + dt_ms / 1050)
+      this.u = Math.min(1, this.u + dt_ms / 1550)
       const u = this.u
       const ex = 2 * this.tx - this.sx
       const cx = this.tx
@@ -114,7 +114,7 @@ export class Bat extends Critter {
     } else {
       const dx = this.home_x - this.cx, dy = this.home_y - this.cy
       const d = Math.max(1, Math.hypot(dx, dy))
-      const v = Math.min(d, 170 * dt)
+      const v = Math.min(d, 120 * dt)
       this.cx += (dx / d) * v
       this.cy += (dy / d) * v
       if (d < 4) { this.mode = 'hang'; this.cool = 1800; this.face = 1 }
