@@ -29,14 +29,17 @@ test('bat stays put, warns, then shrieks; shockwaves hurt on the ground but can 
   assert.ok(Math.abs(b.cx - 500) < 1 && Math.abs(b.cy - (G - 250)) < 3, 'never moves')
   const ground = { x: 0, y: G - 56, w: 100, h: 56 }
   const air = { x: 0, y: G - 130, w: 100, h: 56 } // mid-hop
-  let hitGround = false, hitAir = false
+  let hitGround = false, hitAir = false, maxWaves = 0, dir0 = 0
   for (let i = 0; i < 90; i++) {
     b.update(16, w)
-    const wx = b.waves[0] ? 500 - b.waves[0].d : 0
+    maxWaves = Math.max(maxWaves, b.waves.length); if (b.waves[0]) dir0 = b.waves[0].dir
+    const wx = b.waves[0] ? 500 + b.waves[0].dir * b.waves[0].d : 0
     ground.x = air.x = wx - 50
     if (b.hazard(ground)) hitGround = true
     if (b.ms > 600 && b.hazard(air)) hitAir = true
   }
+  assert.equal(maxWaves, 1, 'a single wave, one direction')
+  assert.equal(dir0, -1, 'toward the frog')
   assert.ok(hitGround, 'a frog standing on the ground gets hit')
   assert.ok(!hitAir, 'a frog hopping over the wave is safe')
   // near-field blast right below the bat
@@ -44,6 +47,8 @@ test('bat stays put, warns, then shrieks; shockwaves hurt on the ground but can 
   step(b2, world(500), 1700)
   assert.equal(b2.mode, 'shriek')
   assert.ok(b2.hazard({ x: 450, y: G - 140, w: 100, h: 56 }), 'blast hurts when you are right next to it')
+  const behind = new Bat(500, G - 120, G); behind.mode = 'shriek'; behind.ms = 100; behind.face = 1
+  assert.ok(!behind.hazard({ x: 380, y: G - 140, w: 60, h: 56 }), 'nothing happens behind the bat')
   // out of earshot / dead: nothing
   const b3 = new Bat(500, G - 250, G)
   step(b3, world(2000), 3000); assert.equal(b3.mode, 'hang')

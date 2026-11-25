@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.6.3** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.6.4** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -113,7 +113,7 @@ so the single-file build stays around 2.7 MB.
 | Creature | Behaviour | How to beat it |
 |---|---|---|
 | Mosquito | Patrols; dives at you faster the closer it gets | Tongue it or stomp it |
-| Bat | Hangs in place. Opens its mouth (warning), then shrieks: hurts if you are close, and sends two sonic shockwaves along the ground | Hop over the shockwaves, stand on a leaf, hide underwater, use a shield, or tongue/stomp the bat |
+| Bat | Hangs in place. Turns toward you, opens its mouth (warning), then shrieks one way: a short blast in front of its mouth and one sonic shockwave along the ground | Hop over the shockwave, stand on a leaf, hide underwater, use a shield, or tongue/stomp the bat |
 | Owl | Dozes; eyes flare (warning), then a fast straight glide | Dodge the glide, then tongue or stomp it |
 | Mole | Mound shakes, then pops up briefly | Tongue or stomp it while it is up; harmless when hidden |
 | Beetle | Armoured: contact hurts and the tongue bounces off | Stomp to flip it, then tongue the helpless beetle before it rights itself |
@@ -124,6 +124,9 @@ so the single-file build stays around 2.7 MB.
 Creature art is drawn in code (`web/src/game/bestiary.js`); placements are in `level.js` (`bestiary`).
 
 ## Changelog
+
+### 2.6.4
+- Bat shriek is smaller and one-directional: it faces you, the close-range blast only reaches ~60 px in front of its mouth, and a single shockwave travels toward you (shorter lifetime, 1.5 s).
 
 ### 2.6.3
 - Bats no longer fly: they hang in place and emit a sonic shriek that hurts (close-range blast + two ground shockwaves you can jump over). They warn first with an open mouth.

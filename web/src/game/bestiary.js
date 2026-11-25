@@ -95,25 +95,25 @@ export class Bat extends Critter {
     this.cy = this.home_y + Math.sin(this.t / 700) * 1.5
     if (this.mode === 'hang') {
       const s = this._sees(game, 520, 460)
-      if (s && !this.cool) { this.mode = 'warn'; this.ms = 0 }
+      if (s && !this.cool) { this.mode = 'warn'; this.ms = 0; this.face = s.dx >= 0 ? 1 : -1 }
     } else if (this.mode === 'warn') {
       if (this.ms >= 650) {
         this.mode = 'shriek'; this.ms = 0
-        this.waves = [{ dir: -1, d: 0 }, { dir: 1, d: 0 }]
+        this.waves = [{ dir: this.face, d: 0 }] // one direction only: where it is facing
         game?._emit?.('shriek')
       }
     } else {
       for (const w of this.waves) w.d += (dt_ms / 1000) * 230
-      if (this.ms >= 1900) { this.mode = 'hang'; this.ms = 0; this.cool = 2600; this.waves = [] }
+      if (this.ms >= 1500) { this.mode = 'hang'; this.ms = 0; this.cool = 2600; this.waves = [] }
     }
   }
 
   // The blast near the bat and the ground shockwaves. Called by the engine.
   hazard(fb) {
     if (!this.alive || this.mode !== 'shriek') return false
-    if (this.ms < 500) { // near-field blast
+    if (this.ms < 450) { // short-range blast, straight ahead of its mouth only
       const cx = fb.x + fb.w / 2, cy = fb.y + fb.h / 2
-      if (Math.hypot(cx - this.cx, cy - this.cy) < 110 + fb.w / 2) return true
+      if ((cx - this.cx) * this.face > -10 && Math.hypot(cx - this.cx, cy - this.cy) < 60 + fb.w / 2) return true
     }
     for (const w of this.waves) {
       const wx = this.home_x + w.dir * w.d
@@ -127,18 +127,20 @@ export class Bat extends Critter {
     if (this.alive && this.mode === 'shriek') {
       ctx.save()
       ctx.lineCap = 'round'
-      // expanding rings of sound
+      // small cone of sound rings in front of the mouth
       for (let k = 0; k < 3; k++) {
-        const r = (this.ms - k * 160) * 0.22
-        if (r <= 6 || r > 230) continue
-        ctx.strokeStyle = `rgba(190,235,255,${0.7 * (1 - r / 230)})`
-        ctx.lineWidth = 4
-        ctx.beginPath(); ctx.arc(this.cx, this.cy, r, 0.15, Math.PI - 0.15); ctx.stroke()
+        const r = (this.ms - k * 130) * 0.1
+        if (r <= 5 || r > 70) continue
+        ctx.strokeStyle = `rgba(190,235,255,${0.75 * (1 - r / 70)})`
+        ctx.lineWidth = 3
+        ctx.beginPath()
+        const a0 = this.face > 0 ? -0.8 : Math.PI - 0.8
+        ctx.arc(this.cx + this.face * 14, this.cy - 4, r, a0, a0 + 1.6); ctx.stroke()
       }
       // ground shockwaves
       for (const w of this.waves) {
         const wx = this.home_x + w.dir * w.d
-        const fade = clamp(1 - w.d / 440, 0.15, 1)
+        const fade = clamp(1 - w.d / 340, 0.15, 1)
         for (let k = 0; k < 3; k++) {
           const off = -w.dir * k * 9
           ctx.strokeStyle = `rgba(200,240,255,${fade * (1 - k * 0.28)})`
@@ -153,7 +155,7 @@ export class Bat extends Critter {
       // little tell on the ground where the waves will start
       ctx.save()
       ctx.fillStyle = `rgba(190,235,255,${0.18 + 0.12 * Math.sin(this.t / 40)})`
-      ctx.beginPath(); ctx.ellipse(this.home_x, this.ground_y - 2, 40, 6, 0, 0, TAU); ctx.fill()
+      ctx.beginPath(); ctx.ellipse(this.home_x + this.face * 30, this.ground_y - 2, 30, 5, 0, 0, TAU); ctx.fill()
       ctx.restore()
     }
     super.draw(ctx)
