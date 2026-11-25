@@ -5,8 +5,7 @@ import { Entity, Mosquito } from './entities.js'
 import bossAtlas from '../assets/sprites/creatures/fly_boss.png'
 
 const CELL = { w: 470, h: 300 }
-const DRAW_W = 190
-const DRAW_H = (DRAW_W * CELL.h) / CELL.w
+const BASE_W = 190
 // eye position in the art, as a fraction of the cell (facing right; mirrored when facing left)
 const EYE = { fx: 0.796, fy: 0.228 }
 
@@ -19,14 +18,111 @@ const PHASES = {
 
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 
+// The Fly Boss comes in five flavours, one per area. `attacks` are extra
+// signature moves on top of the dives and minions.
+export const VARIANTS = {
+  fly: { title: 'THE FLY BOSS!', scale: 1, hue: 0, hp: 3, speed: 1, attacks: [] },
+  bog: { title: 'THE BOG FLY!', scale: 0.9, hue: 75, hp: 2, speed: 0.95, attacks: ['mud'] },
+  cypress: { title: 'THE FOREST FLY!', scale: 0.9, hue: 150, hp: 2, speed: 1, attacks: ['swarm'] },
+  storm: { title: 'THE STORM FLY!', scale: 0.95, hue: 205, hp: 3, speed: 1.05, attacks: ['bolt'] },
+  queen: { title: 'THE HIVE QUEEN!', scale: 1.25, hue: -35, hp: 4, speed: 1.1, attacks: ['mud', 'bolt', 'swarm'] },
+}
+
+// Mud spat by the Bog Fly / Queen: an arcing blob that splats on the ground.
+export class MudBlob extends Entity {
+  constructor(x, y, vx, vy, ground_y) {
+    super(x, y, 24, 24)
+    this.vx = vx; this.vy = vy; this.ground_y = ground_y
+    this.edible = true // you can eat it out of the air
+    this.t = 0
+  }
+  update(dt_ms) {
+    this.t += dt_ms
+    if (this.eaten) return
+    if (!this.alive) { this.death_ms += dt_ms; if (this.death_ms > 250) this.gone = true; return }
+    const dt = dt_ms / 1000
+    this.vy += 900 * dt
+    this.cx += this.vx * dt
+    this.cy += this.vy * dt
+    if (this.cy > this.ground_y - 12 || this.t > 5000) this.die() // splat
+  }
+  draw(ctx) {
+    if (this.scale_mul < 0.03) return
+    ctx.save()
+    ctx.globalAlpha = this.alive ? 1 : Math.max(0, 1 - this.death_ms / 250)
+    const sq = this.alive ? 1 : 1 + this.death_ms / 120
+    ctx.translate(this.cx, this.cy)
+    ctx.scale(this.scale_mul * sq, this.scale_mul * (this.alive ? 1 : 0.5))
+    ctx.fillStyle = '#4a3216'
+    ctx.beginPath(); ctx.arc(0, 0, 12, 0, Math.PI * 2); ctx.fill()
+    ctx.fillStyle = '#6a4a22'
+    ctx.beginPath(); ctx.arc(-3, -3, 5, 0, Math.PI * 2); ctx.fill()
+    ctx.restore()
+  }
+}
+
+// A lightning strike called by the Storm Fly / Queen: a flickering warning on
+// the ground, then a bolt that hurts anything under it.
+export class Bolt extends Entity {
+  constructor(x, ground_y) {
+    super(x, ground_y - 250, 56, 500)
+    this.ground_y = ground_y
+    this.harmless = true // contact never hurts; only the strike (hazard) does
+    this.edible = false
+    this.ms = 0
+    this.light = 0
+  }
+  get striking() { return this.ms >= 800 && this.ms < 1050 }
+  update(dt_ms) {
+    this.ms += dt_ms
+    this.light = this.striking ? 320 : 0
+    if (this.ms >= 1250) this.gone = true
+  }
+  hazard(fb) {
+    if (!this.striking) return false
+    return fb.x < this.cx + 28 && fb.x + fb.w > this.cx - 28
+  }
+  draw(ctx) {
+    const G = this.ground_y
+    ctx.save()
+    if (this.ms < 800) { // warning: flickering ground marker and thin line
+      const f = 0.35 + 0.35 * Math.sin(this.ms / 40)
+      ctx.fillStyle = `rgba(255,255,160,${f})`
+      ctx.beginPath(); ctx.ellipse(this.cx, G - 2, 34, 6, 0, 0, Math.PI * 2); ctx.fill()
+      ctx.strokeStyle = `rgba(255,255,200,${f * 0.6})`; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(this.cx, G - 60); ctx.lineTo(this.cx, G); ctx.stroke()
+    } else if (this.striking) {
+      ctx.strokeStyle = '#fffbe0'; ctx.lineWidth = 8; ctx.lineJoin = 'round'
+      ctx.shadowColor = '#bde0ff'; ctx.shadowBlur = 24
+      ctx.beginPath()
+      let x = this.cx + 10, y = -20
+      ctx.moveTo(x, y)
+      for (let i = 0; i < 9; i++) { y += (G + 20) / 9; x = this.cx + ((i * 7919) % 5 - 2) * 9; ctx.lineTo(x, y) }
+      ctx.lineTo(this.cx, G)
+      ctx.stroke()
+      ctx.fillStyle = 'rgba(255,255,230,.5)'
+      ctx.fillRect(this.cx - 28, 0, 56, G)
+    } else {
+      ctx.fillStyle = 'rgba(255,240,180,0.25)'
+      ctx.beginPath(); ctx.ellipse(this.cx, G - 2, 20, 4, 0, 0, Math.PI * 2); ctx.fill()
+    }
+    ctx.restore()
+  }
+}
+
 export class FlyBoss extends Entity {
-  constructor(x, y, arena, ground_y, seed = 7) {
-    super(x, y, 150, 84)
+  constructor(x, y, arena, ground_y, seed = 7, variant = 'fly') {
+    const v = VARIANTS[variant] ?? VARIANTS.fly
+    super(x, y, 150 * v.scale, 84 * v.scale)
+    this.variant = v
+    this.title = v.title
+    this.k = v.scale
     this.is_boss = true
     this.arena = arena // { x0, x1 }
     this.ground_y = ground_y
-    this.hp = 3
-    this.max_hp = 3
+    this.hp = v.hp
+    this.max_hp = v.hp
+    this.atk = { mud: 2500, bolt: 3500, swarm: 4500 }
     this.phase = 'dormant' // dormant | intro | fight | telegraph | dive | retreat | dying
     this.ms = 0
     this.t = 0
@@ -53,21 +149,27 @@ export class FlyBoss extends Entity {
     this.rng = (this.rng * 1664525 + 1013904223) % 4294967296
     return this.rng / 4294967296
   }
-  get cfgp() { return PHASES[Math.max(1, this.hp)] }
+  get cfgp() {
+    const p = PHASES[clamp(this.hp, 1, 3)]
+    return { ...p, speed: p.speed * this.variant.speed }
+  }
 
   // Centre of the glowing eye in world coordinates
   eyePos() {
     const sx = this.face > 0 ? EYE.fx : 1 - EYE.fx
+    const W = BASE_W * this.k
+    const H = (W * CELL.h) / CELL.w
     return {
-      x: this.cx - DRAW_W / 2 + sx * DRAW_W,
-      y: this.cy - 4 - DRAW_H / 2 + EYE.fy * DRAW_H,
+      x: this.cx - W / 2 + sx * W,
+      y: this.cy - 4 * this.k - H / 2 + EYE.fy * H,
     }
   }
   // Tongue target: slightly bigger than the visible eye
   weakRect() {
     if (this.harmless || !this.alive) return null
     const e = this.eyePos()
-    return { x: e.x - 22, y: e.y - 22, w: 44, h: 44 }
+    const r = 22 * Math.max(1, this.k)
+    return { x: e.x - r, y: e.y - r, w: r * 2, h: r * 2 }
   }
 
   // The tongue touched the eye. Returns true if it counted.
@@ -118,6 +220,7 @@ export class FlyBoss extends Entity {
         this.dive_ms -= dt_ms
         if (sees && this.dive_ms <= 0) { this.phase = 'telegraph'; this.ms = 0 }
         this._spawnMinions(dt_ms, game)
+        this._attacks(dt_ms, game, f, sees)
         break
       }
       case 'telegraph': // shudder in place, then lunge
@@ -196,6 +299,35 @@ export class FlyBoss extends Entity {
     this.wp_ms = p.wp_ms[0] + this.rand() * (p.wp_ms[1] - p.wp_ms[0])
   }
 
+  // Signature attacks (mud, lightning, swarm), each on its own timer.
+  _attacks(dt_ms, game, f, sees) {
+    if (!game || !sees) return
+    const hpf = 1 - 0.18 * (this.max_hp - this.hp) // faster when hurt
+    for (const name of this.variant.attacks) {
+      this.atk[name] -= dt_ms
+      if (this.atk[name] > 0) continue
+      if (name === 'mud') {
+        this.atk.mud = (3600 + this.rand() * 1200) * hpf
+        const tx = f.x + f.w / 2, ty = f.y + f.h / 2
+        const T = 0.9
+        const sxp = this.cx + this.face * 40 * this.k, syp = this.cy + 10
+        const vx = (tx - sxp) / T
+        const vy = (ty - syp - 0.5 * 900 * T * T) / T
+        game.entities.push(new MudBlob(sxp, syp, vx, vy, this.ground_y))
+      } else if (name === 'bolt') {
+        this.atk.bolt = (4200 + this.rand() * 1500) * hpf
+        game.entities.push(new Bolt(f.x + f.w / 2, this.ground_y))
+      } else if (name === 'swarm') {
+        this.atk.swarm = (7500 + this.rand() * 1500) * hpf
+        for (let i = 0; i < 2; i++) {
+          const m = new Mosquito(this.cx + (i ? 40 : -40), this.cy + 30, 90)
+          m.minion = true; m.mode = 'chase'
+          game.entities.push(m)
+        }
+      }
+    }
+  }
+
   _spawnMinions(dt_ms, game) {
     if (!game) return
     this.minion_ms -= dt_ms
@@ -216,14 +348,18 @@ export class FlyBoss extends Entity {
     ctx.save()
     // blink while invulnerable
     if (this.inv_ms > 0 && !dying && Math.floor(this.inv_ms / 70) % 2 === 0) ctx.globalAlpha = 0.45
-    ctx.translate(this.cx, this.cy - 4)
+    ctx.translate(this.cx, this.cy - 4 * this.k)
     const shake = this.phase === 'telegraph' ? Math.sin(this.t / 18) * 3 : 0
     ctx.translate(shake, 0)
     ctx.rotate(dying ? this.spin : clamp(this.vx / 900, -0.3, 0.3))
     const buzz = 1 + 0.025 * Math.sin(this.t / 22) // wing-buzz shimmer
     ctx.scale(buzz, 1 / buzz)
     const sx = this.face > 0 ? 0 : CELL.w
-    ctx.drawImage(this.img, sx, 0, CELL.w, CELL.h, -DRAW_W / 2, -DRAW_H / 2, DRAW_W, DRAW_H)
+    const W = BASE_W * this.k
+    const H = (W * CELL.h) / CELL.w
+    if (this.variant.hue) ctx.filter = `hue-rotate(${this.variant.hue}deg) saturate(1.5)`
+    ctx.drawImage(this.img, sx, 0, CELL.w, CELL.h, -W / 2, -H / 2, W, H)
+    ctx.filter = 'none'
     ctx.restore()
 
     // Glow on the weak point so you can tell where to aim

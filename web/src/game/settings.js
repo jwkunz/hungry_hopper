@@ -1,6 +1,6 @@
 // Player settings, persisted to localStorage (never throws).
 const KEY = 'hungry_hopper.settings'
-const DEFAULTS = { music: 0.35, sfx: 1, touch: true }
+const DEFAULTS = { music: 0.35, sfx: 1, touch: true, lowfx: false }
 
 const clamp01 = (v) => Math.min(1, Math.max(0, Number.isFinite(+v) ? +v : 0))
 
@@ -11,6 +11,7 @@ function load() {
       music: raw.music === undefined ? DEFAULTS.music : clamp01(raw.music),
       sfx: raw.sfx === undefined ? DEFAULTS.sfx : clamp01(raw.sfx),
       touch: raw.touch === undefined ? DEFAULTS.touch : !!raw.touch,
+      lowfx: raw.lowfx === undefined ? DEFAULTS.lowfx : !!raw.lowfx,
     }
   } catch {
     return { ...DEFAULTS }
@@ -24,7 +25,7 @@ class Settings {
   }
   get(k) { return this.values[k] }
   set(k, v) {
-    this.values = { ...this.values, [k]: k === 'touch' ? !!v : clamp01(v) }
+    this.values = { ...this.values, [k]: (k === 'touch' || k === 'lowfx') ? !!v : clamp01(v) }
     try { globalThis.localStorage?.setItem(KEY, JSON.stringify(this.values)) } catch { /* ignore */ }
     this.listeners.forEach((fn) => fn(this.values))
   }

@@ -177,6 +177,45 @@ export class GlowBug extends Pickup {
   }
 }
 
+// ---------------------------------------------------------------- GOLDEN FLY
+// A hidden bonus: collect it (touch or tongue). Finding them all earns stars
+// on the level-select screen.
+export class GoldenFly extends Pickup {
+  constructor(x, y, id) { super(x, y, 34, 30, 'secret'); this.secret_id = id; this.light = 90 }
+  _float() {
+    this.cy = this.base_y + Math.sin(this.t / 330) * 7
+    this.cx = this.base_x + Math.sin(this.t / 700) * 9
+  }
+  draw(ctx) {
+    if (this.scale_mul < 0.03) return
+    const s = this.scale_mul
+    ctx.save()
+    ctx.translate(this.cx, this.cy)
+    ctx.scale(s, s)
+    const pulse = 0.7 + 0.3 * Math.sin(this.t / 140)
+    const g = ctx.createRadialGradient(0, 0, 2, 0, 0, 40)
+    g.addColorStop(0, `rgba(255,225,90,${0.6 * pulse})`); g.addColorStop(1, 'rgba(255,200,60,0)')
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 40, 0, TAU); ctx.fill()
+    const flap = Math.sin(this.t / 26)
+    ctx.fillStyle = 'rgba(255,245,200,.7)'
+    for (const sgn of [-1, 1]) {
+      ctx.save(); ctx.translate(sgn * 3, -4); ctx.rotate(sgn * (0.55 + 0.4 * flap))
+      ctx.beginPath(); ctx.ellipse(0, -9, 5, 11, 0, 0, TAU); ctx.fill(); ctx.restore()
+    }
+    ctx.fillStyle = '#d8a017'
+    ctx.beginPath(); ctx.ellipse(0, 2, 6, 9, 0, 0, TAU); ctx.fill()
+    ctx.fillStyle = '#f7d23a'
+    ctx.beginPath(); ctx.arc(0, -8, 4.5, 0, TAU); ctx.fill()
+    ctx.fillStyle = '#7a5200'
+    for (const y of [-1, 3, 7]) ctx.fillRect(-5, y, 10, 1.6)
+    // sparkle
+    const k = (this.t / 400) % 1
+    ctx.strokeStyle = `rgba(255,255,255,${1 - k})`; ctx.lineWidth = 1.5
+    ctx.beginPath(); ctx.moveTo(14, -14 - k * 4); ctx.lineTo(14, -6 + k * 4); ctx.moveTo(10, -10); ctx.lineTo(18, -10); ctx.stroke()
+    ctx.restore()
+  }
+}
+
 // ---------------------------------------------------------------- LOG
 // A light log wedged on the far bank of a wide gap, its near end drooping into
 // the pit. Tongue its end: it slides across towards you and settles as a bridge.
@@ -289,5 +328,6 @@ export function spawnItems(level) {
     ...(it.anchors ?? []).map(([x, y]) => new Anchor(x, y)),
     ...(it.glowbugs ?? []).map(([x, y]) => new GlowBug(x, y)),
     ...(it.logs ?? []).map((spec) => new Log(spec, level.ground_y)),
+    ...(level.secrets ?? []).map((sc) => new GoldenFly(sc.x, sc.y, sc.id)),
   ]
 }

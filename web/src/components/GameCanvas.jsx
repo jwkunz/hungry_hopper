@@ -7,6 +7,8 @@ import TouchControls from './TouchControls.jsx'
 import SoundToggle from './SoundToggle.jsx'
 import { MenuButton, MenuPanel } from './Menu.jsx'
 import { settings } from '../game/settings.js'
+import { LEVELS } from '../game/levels/index.js'
+import { quality } from '../game/render.js'
 
 const playingNow = (g) => !!g && (g.state === 'play' || g.state === 'dying')
 
@@ -23,6 +25,7 @@ export default function GameCanvas() {
   const [inRun, setInRun] = useState(false)
   const [playing, setPlaying] = useState(false)
   const [touch, setTouch] = useState(settings.get('touch'))
+  const [lowfx, setLowfx] = useState(settings.get('lowfx'))
   const [box, setBox] = useState({ w: CONFIG.view_w, h: CONFIG.view_h })
 
   // Fit the 16:9 box into the stage
@@ -41,13 +44,14 @@ export default function GameCanvas() {
 
   // Backing-store resolution follows the box size and device pixel ratio
   useEffect(() => {
-    const dpr = window.devicePixelRatio || 1
+    const dpr = lowfx ? 1 : Math.min(2, window.devicePixelRatio || 1)
     const c = canvasRef.current
     c.width = Math.round(box.w * dpr)
     c.height = Math.round(box.h * dpr)
-  }, [box])
+  }, [box, lowfx])
 
-  useEffect(() => settings.subscribe((v) => setTouch(v.touch)), [])
+  useEffect(() => settings.subscribe((v) => { setTouch(v.touch); setLowfx(v.lowfx) }), [])
+  useEffect(() => { quality.low = lowfx }, [lowfx])
   useEffect(() => {
     const id = setInterval(() => setPlaying(playingNow(gameRef.current)), 200)
     return () => clearInterval(id)
@@ -99,16 +103,23 @@ export default function GameCanvas() {
     window.addEventListener('keydown', onKey)
     document.addEventListener('visibilitychange', onHide)
     const debug = new URLSearchParams(window.location.search).has('debug')
-    const game = new Game(CONFIG, undefined, { debug, onEvent: (e) => audio.handle(e) })
+    const game = new Game(CONFIG, undefined, { levels: LEVELS, debug, onEvent: (e) => audio.handle(e) })
     gameRef.current = game
     window.__audio = audio
     window.__game = game // handy for debugging / tests
 
     let raf = 0
     let last = null
+    let slow = 16
+    let slowFrames = 0
     const loop = (t) => {
       const dt = last === null ? 0 : t - last
       last = t
+      // Struggling device? Drop to low-power graphics automatically.
+      if (dt > 0 && dt < 250 && !settings.get('lowfx')) {
+        slow = slow * 0.97 + dt * 0.03
+        if (slow > 30 && ++slowFrames > 150) settings.set('lowfx', true)
+      }
       game.update(dt, input)
       const k = canvas.width / CONFIG.view_w
       ctx.setTransform(k, 0, 0, k, 0, 0)
@@ -133,7 +144,10 @@ export default function GameCanvas() {
         <canvas
           ref={canvasRef}
           style={{ width: box.w, height: box.h }}
-          onPointerDown={() => gameRef.current?.tap()}
+          onPointerDown={(e) => {
+            const r = e.currentTarget.getBoundingClientRect()
+            gameRef.current?.tap(((e.clientX - r.left) / r.width) * CONFIG.view_w, ((e.clientY - r.top) / r.height) * CONFIG.view_h)
+          }}
         />
         <SoundToggle />
         <MenuButton playing={playing} onOpen={openMenu} />
@@ -144,6 +158,7 @@ export default function GameCanvas() {
             onResume={closeMenu}
             onRestart={() => { gameRef.current.restartRun(); closeMenu() }}
             onQuit={() => { gameRef.current.quitToTitle(); closeMenu() }}
+            onLevels={() => { gameRef.current.openSelect(); closeMenu() }}
           />
         )}
       </div>

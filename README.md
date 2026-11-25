@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.9.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 3.0.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -143,7 +143,28 @@ The end of level 1 is a boss arena (a puddle plus four leaf platforms). Cross th
 - **Minions:** it calls mosquitos (1, then 2, then 3 at a time). Eat or stomp them.
 - Each hit makes it faster and its dives more frequent. Touching its body kills you; dying restarts the fight at full health. The goal flag only counts once the boss is beaten.
 
+## Levels (M8)
+
+Five areas, each unlocked by finishing the one before. Pick any unlocked one from **LEVELS** on the title
+screen (or *Level select* in the pause menu). Progress and best scores are saved in the browser.
+
+| # | Area | Flavour | Boss |
+|---|------|---------|------|
+| 1 | Mossy Marsh | reeds, fireflies, glow bug cave | The Fly Boss |
+| 2 | Bog | drifting spores | The Bog Fly (spits mud, eat it out of the air) |
+| 3 | Cypress Forest | tall trunks, long log bridge | The Forest Fly (calls extra minions) |
+| 4 | Night Storm | rain, lightning, dark stretches | The Storm Fly (telegraphed lightning strikes) |
+| 5 | The Hive | honeycomb, sticky honey | The Hive Queen (all of the above, 4 hits) |
+
+Every level hides **golden flies** (★). Touch or tongue one for 1000 points; finding them all fills the stars on the select screen.
+Settings has a **Low-power graphics** switch; it also turns on by itself if the game runs slowly.
+
 ## Changelog
+
+### 3.0.0 (M8: content & polish)
+- Five levels with their own themes and weather, level select, saved progress.
+- Boss variants with signature attacks, golden-fly secrets, low-power graphics mode, DPR cap, cached glow sprites.
+- Android wrapper intentionally left out.
 
 ### 2.9.0
 - Pull puzzle: a bridge log you pull across a wide pit with your tongue (the old 200 px pit and its leaves were replaced by a 400 px gap; the first anchor moved out because the log is the solution; the owl moved past the gap).

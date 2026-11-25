@@ -33,7 +33,7 @@ export function MenuButton({ playing, onOpen }) {
 }
 
 // The pause / settings panel. `inRun` = a run is in progress (shows Restart / Quit).
-export function MenuPanel({ inRun, onResume, onRestart, onQuit }) {
+export function MenuPanel({ inRun, onResume, onRestart, onQuit, onLevels }) {
   const v = useSettings()
   const muted = useMuted()
   return (
@@ -60,9 +60,15 @@ export function MenuPanel({ inRun, onResume, onRestart, onQuit }) {
           <input type="checkbox" checked={v.touch} onChange={(e) => settings.set('touch', e.target.checked)} />
         </label>
 
+        <label className="row check">
+          <span>Low-power graphics</span>
+          <input type="checkbox" checked={v.lowfx} onChange={(e) => settings.set('lowfx', e.target.checked)} />
+        </label>
+
         <div className="menu-actions">
           <button type="button" className="primary" onClick={onResume}>{inRun ? 'Resume' : 'Close'}</button>
           {inRun && <button type="button" onClick={onRestart}>Restart run</button>}
+          {onLevels && <button type="button" onClick={onLevels}>Level select</button>}
           {inRun && <button type="button" onClick={onQuit}>Quit to title</button>}
         </div>
         <p className="hint">Esc / P: pause · M: mute</p>

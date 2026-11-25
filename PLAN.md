@@ -112,9 +112,10 @@ beetle (armoured: belly-tongue or stomp) · pill bug (rolls) · more mosquitos
 - [x] Combo multiplier (tongue → stomp → tongue, x2…x5)
 
 ### M8 — Content & polish
-- [ ] Multiple levels / areas (marsh, bog, cypress forest, night storm, hive)
-- [ ] Mini-bosses, secrets, level select
-- [ ] Android wrapper project, performance pass on low-end devices
+- [x] Multiple levels / areas: marsh, bog, cypress forest, night storm, hive (3.0.0)
+- [x] Boss variants per area, golden-fly secrets, level select (3.0.0)
+- [x] Performance pass: cached glow sprite, DPR cap, low-power graphics (manual + automatic) (3.0.0)
+- [ ] Android wrapper project (not started, on hold)
 
 ## Decisions
 - **Tongue works while airborne** (decided; implemented in M2). While the tongue

@@ -4,7 +4,8 @@ import { createLevel1 } from './level.js'
 import { spawnEntities } from './spawn.js'
 import { drawBackground, drawWorld, drawWater, drawHud, drawDebug, drawScreen, drawDarkness } from './render.js'
 import { rectsOverlap, segmentHitsRect, isStomp } from './collision.js'
-import { loadHighScore, saveHighScore } from './storage.js'
+import { TITLE_LEVELS_BTN, SELECT_BACK_BTN, SELECT_CARDS, hitRect } from './ui.js'
+import { loadHighScore, saveHighScore, loadProgress, saveProgress } from './storage.js'
 
 export const GameState = Object.freeze({
   TITLE: 'title',
@@ -12,6 +13,7 @@ export const GameState = Object.freeze({
   DYING: 'dying',
   GAMEOVER: 'gameover',
   COMPLETE: 'complete',
+  SELECT: 'select',
 })
 
 const IDLE_INPUT = Object.freeze({ left: false, right: false, up: false, down: false, jump: false, eat: false })
@@ -27,13 +29,27 @@ const IDLE_INPUT = Object.freeze({ left: false, right: false, up: false, down: f
 // other contact is a hit. The tongue eats enemies and grabs pickups.
 //
 // `onEvent(name)` is called for sound/music cues, e.g. 'jump', 'music:play'.
+
+const clampIndex = (i, n) => Math.max(0, Math.min(n - 1, i | 0))
+
 export class Game {
-  constructor(cfg = CONFIG, level = createLevel1(), { debug = false, onEvent = null } = {}) {
+  constructor(cfg = CONFIG, level = null, { debug = false, onEvent = null, levels = null, progress = null } = {}) {
     this.cfg = cfg
+    // `levels` = the campaign (see levels/index.js). Without it the game is a
+    // single level (used by the tests), with no level select or next level.
+    this.levels = levels
+    this.progress = levels ? (progress ?? loadProgress()) : null
+    this.level_index = 0
+    this.select_index = 0
+    this.tapPos = null
+    this.prevLeft = false
+    this.prevRight = false
+    this.secrets_run = new Set()
+    if (!level) level = levels ? levels[0].build() : createLevel1()
     this.level = level
     this.debug = debug
     this.onEvent = onEvent
-    this.high_score = loadHighScore()
+    this.high_score = this._bestScore()
     this.new_high = false
     this.popups = []
     this.particles = [] // water bubbles
@@ -55,8 +71,37 @@ export class Game {
   // ---- public API ----
 
   // A tap/click on the playfield (advances non-play screens)
-  tap() {
+  // (x, y) are logical view coordinates when the tap came from a pointer.
+  tap(x = null, y = null) {
     this.tapQueued = true
+    this.tapPos = x === null ? null : { x, y }
+  }
+
+  _bestScore() {
+    return this.levels ? (this.progress.best[this.level.id] ?? 0) : loadHighScore()
+  }
+
+  // Start (or restart) level i of the campaign from the beginning.
+  startLevel(i) {
+    if (!this.levels) return
+    this.paused = false
+    this.level_index = clampIndex(i, this.levels.length)
+    this.level = this.levels[this.level_index].build()
+    this.high_score = this._bestScore()
+    this._newRun()
+    this._enter(GameState.PLAY)
+  }
+
+  // Show the level-select screen
+  openSelect() {
+    if (!this.levels) return
+    this.paused = false
+    this.select_index = this.level_index
+    this._enter(GameState.SELECT)
+  }
+
+  isUnlocked(i) {
+    return !this.levels || i < this.progress.unlocked
   }
 
   // Pause freezes the simulation (only while actually playing or dying).
@@ -101,9 +146,21 @@ export class Game {
     }
     this.prevJump = input.jump
 
+    const leftEdge = input.left && !this.prevLeft
+    const rightEdge = input.right && !this.prevRight
+    this.prevLeft = input.left
+    this.prevRight = input.right
+    const pos = this.tapPos
+    this.tapPos = null
+
     this.state_ms += frame_ms
-    if (this.state !== GameState.PLAY && this.state !== GameState.DYING) {
-      if (pressed && this.state_ms > cfg.screen_min_ms) this._advanceScreen()
+    if (this.state === GameState.SELECT) {
+      this._updateSelect(pressed, pos, leftEdge, rightEdge)
+    } else if (this.state !== GameState.PLAY && this.state !== GameState.DYING) {
+      if (pressed && this.state_ms > cfg.screen_min_ms) {
+        if (this.state === GameState.TITLE && this.levels && pos && hitRect(pos, TITLE_LEVELS_BTN)) this.openSelect()
+        else this._advanceScreen()
+      }
     }
 
     this.accumulator += frame_ms
@@ -136,10 +193,27 @@ export class Game {
     }
   }
 
+  _updateSelect(pressed, pos, leftEdge, rightEdge) {
+    const n = this.levels.length
+    if (leftEdge) this.select_index = (this.select_index + n - 1) % n
+    if (rightEdge) this.select_index = (this.select_index + 1) % n
+    if (!pressed || this.state_ms < this.cfg.screen_min_ms) return
+    if (pos) {
+      if (hitRect(pos, SELECT_BACK_BTN)) return this._enter(GameState.TITLE)
+      const hit = SELECT_CARDS.findIndex((c, i) => i < n && hitRect(pos, c))
+      if (hit < 0) return
+      this.select_index = hit
+    }
+    if (this.isUnlocked(this.select_index)) this.startLevel(this.select_index)
+    else this._emit('cut') // locked
+  }
+
   _advanceScreen() {
     if (this.state === GameState.TITLE) {
       this._newRun()
       this._enter(GameState.PLAY)
+    } else if (this.state === GameState.COMPLETE && this.levels && this.level_index + 1 < this.levels.length) {
+      this.startLevel(this.level_index + 1) // on to the next area
     } else {
       this._resetWorld()
       this._enter(GameState.TITLE)
@@ -147,6 +221,7 @@ export class Game {
   }
 
   _newRun() {
+    this.secrets_run = new Set()
     this.combo = 0
     this.combo_ms = 0
     this.boss_defeated = false
@@ -175,7 +250,7 @@ export class Game {
     this.level.solids = this.level.solids.filter((sd) => sd.kind !== 'log') // bridges reset with their log
     this.entities = spawnEntities(this.level).filter(
       (e) => (this.checkpoint < 0 || e.cx > x) && !(e.cx > lo && e.cx < hi && e.kind === 'enemy') &&
-        !(e.is_boss && this.boss_defeated),
+        !(e.is_boss && this.boss_defeated) && !(e.secret_id && this.secrets_run.has(e.secret_id)),
     )
     this.boss = this.entities.find((e) => e.is_boss) ?? null
     this.arena_active = false // the fight restarts (boss at full health) after a death
@@ -187,7 +262,12 @@ export class Game {
     if (this.score > this.high_score) {
       this.high_score = this.score
       this.new_high = true
-      saveHighScore(this.score)
+      if (this.levels) {
+        this.progress.best[this.level.id] = this.score
+        saveProgress(this.progress)
+      } else {
+        saveHighScore(this.score)
+      }
     }
   }
 
@@ -206,6 +286,15 @@ export class Game {
     this.score += bonus
     this._emit('win')
     this._enter(GameState.COMPLETE)
+    if (this.levels) {
+      const p = this.progress
+      p.unlocked = Math.max(p.unlocked, this.level_index + 2)
+      if (this.score > (p.best[this.level.id] ?? 0)) p.best[this.level.id] = this.score
+      const had = new Set(p.secrets[this.level.id] ?? [])
+      for (const id of this.secrets_run) had.add(id)
+      p.secrets[this.level.id] = [...had]
+      saveProgress(p)
+    }
   }
 
   // ---- simulation ----
@@ -384,7 +473,7 @@ export class Game {
     if (arena && this.boss && !this.boss_defeated) {
       if (!this.arena_active && cx > arena.trigger) {
         this.arena_active = true
-        this._popup(arena.x0 + cfg.view_w / 2, level.ground_y - 200, 'THE FLY BOSS!')
+        this._popup(arena.x0 + cfg.view_w / 2, level.ground_y - 200, this.boss.title ?? 'THE FLY BOSS!')
       }
       if (this.arena_active) {
         const p = frog.physics
@@ -498,7 +587,12 @@ export class Game {
   _collect(e, viaTongue = false) {
     e.die()
     if (viaTongue) { e.eaten = true; e.swallow_ms = 0 }
-    if (e.power === 'glide') {
+    if (e.power === 'secret') {
+      this.secrets_run.add(e.secret_id)
+      this._emit('powerup')
+      this.score += 1000
+      this._popup(e.cx, e.cy, `★ SECRET! ${this.secrets_run.size}/${this.level.secrets.length}`)
+    } else if (e.power === 'glide') {
       this.frog.glide_ms = this.cfg.glide_ms
       this._emit('powerup')
       this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'GLIDE! (hold JUMP)')
