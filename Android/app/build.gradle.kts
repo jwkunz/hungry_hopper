@@ -56,7 +56,10 @@ val buildWeb by tasks.registering(Exec::class) {
 
 val copyWeb by tasks.registering(Copy::class) {
     dependsOn(buildWeb)
-    from(fileTree(rootProject.file("../web")) { include("dist/hungry_hopper-v*.html") }) { rename { "index.html" } }
+    from(rootProject.file("../web/dist")) {
+        include("hungry_hopper-v*.html")
+        rename { "index.html" }
+    }
     into(layout.buildDirectory.dir("generated/web-assets"))
 }
 

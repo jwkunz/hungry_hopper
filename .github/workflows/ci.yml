@@ -67,6 +67,8 @@ jobs:
       - name: Build APK (Gradle builds the web page the app bundles)
         run: ./gradlew :app:assembleDebug --no-daemon
         working-directory: Android
+      - name: Check the APK bundles the game page at assets/index.html
+        run: unzip -l Android/app/build/outputs/apk/debug/app-debug.apk | grep -E ' assets/index.html$'
       - run: cp Android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/hungry-hopper-debug.apk"
       - uses: actions/upload-artifact@v4
         with:
