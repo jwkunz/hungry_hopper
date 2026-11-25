@@ -18,6 +18,8 @@ test('level 1: every platform is reachable with the current jump physics', () =>
   const nodes = [
     ...level.segments.map((s) => ({ x: s.x, w: s.w, y: level.ground_y, ground: true })),
     ...level.leaves.map((l) => ({ x: l.x, w: l.w, y: l.y })),
+    // a pulled bridge log counts as ground (that is the puzzle's solution)
+    ...(level.items.logs ?? []).map((l) => ({ x: l.gap_left - 40, w: l.length, y: level.ground_y })),
   ]
   const hgap = (a, b) => Math.max(0, b.x - (a.x + a.w), a.x - (b.x + b.w))
   const canJump = (a, b) => {

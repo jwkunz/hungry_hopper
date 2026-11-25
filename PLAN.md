@@ -106,9 +106,9 @@ beetle (armoured: belly-tongue or stomp) · pill bug (rolls) · more mosquitos
 
 ### M7 — Tongue traversal & power-ups (done in 2.8.0 except the items marked open)
 - [x] Grapple from vine anchors (reel in, hang, fling with JUMP)
-- [ ] Pull light objects; spit captured enemies (open)
+- [x] Pull light objects: bridge log across a wide pit (2.9.0). Spitting captured enemies: dropped.
 - [x] Eat-to-power-up: dragonfly (glide), pepper (fire), shield firefly
-- [ ] Glow fly (light) — needs dark areas first (M8) (open)
+- [x] Glow bug (light) + dark areas (2.9.0)
 - [x] Combo multiplier (tongue → stomp → tongue, x2…x5)
 
 ### M8 — Content & polish

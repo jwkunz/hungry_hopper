@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.8.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.9.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -129,6 +129,8 @@ Creature art is drawn in code (`web/src/game/bestiary.js`); placements are in `l
 - **Dragonfly (glide):** eat or touch it, then **hold JUMP while falling** to glide down slowly and steer a little faster. About 9 s.
 - **Pepper (fire tongue):** eat or touch it for about 9 s of a burning tongue. It burns through beetle shells and the crane, and torches the briar sections around the one you hit.
 - **Combo:** kills (tongue, stomp or fire) within about 3 s of the last one chain: x2, x3 ... up to x5 points. Getting hurt breaks the chain.
+- **Bridge log (puzzle):** the wide pit before the second checkpoint is too far to jump. A light log is wedged on the far bank with its near end drooping into the pit. Stand at the edge, aim down at the end of the log (it has a pulsing ring) and shoot: the log slides across and settles as a bridge. Dying before the next checkpoint resets the puzzle.
+- **Dark areas and the glow bug:** the stretch after the third checkpoint is dark; you only see a small circle around you plus anything glowing (fireflies, pickups). Eat or touch a **glow bug** to light up a big radius for about 15 s (it fades out at the end). A fire tongue also lights its tip.
 - Power-up timers and the combo show on the right of the HUD.
 
 ## The Fly Boss
@@ -142,6 +144,11 @@ The end of level 1 is a boss arena (a puddle plus four leaf platforms). Cross th
 - Each hit makes it faster and its dives more frequent. Touching its body kills you; dying restarts the fight at full health. The goal flag only counts once the boss is beaten.
 
 ## Changelog
+
+### 2.9.0
+- Pull puzzle: a bridge log you pull across a wide pit with your tongue (the old 200 px pit and its leaves were replaced by a 400 px gap; the first anchor moved out because the log is the solution; the owl moved past the gap).
+- Dark areas (`level.dark`) with soft edges, light sources (frog, fireflies, power-ups, anchors, glow bugs) and the glow bug power-up.
+- Spitting enemies was dropped from the plan.
 
 ### 2.8.0 (M7: tongue traversal and power-ups)
 - Grapple anchors: the tongue latches on, reels you in, you hang and can fling yourself off with JUMP. Two anchors sit over the pits.

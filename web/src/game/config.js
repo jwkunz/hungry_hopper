@@ -83,6 +83,10 @@ export const CONFIG = {
   grapple_hang_ms: 2400,
   grapple_launch_x: 420,
   grapple_launch_y: 640,
+  light_ms: 15000, // glow bug
+  light_radius: 300,
+  base_light: 105, // how far you can see in the dark without help
+  dark_alpha: 0.95,
   combo_window_ms: 3200,
   combo_max: 5,
   points_boss_hit: 500,

@@ -9,7 +9,7 @@ export function createLevel1() {
   // [x, width] — gaps between segments are ponds (swimmable) or pits (fatal)
   const segments = [
     [0, 1200],
-    [1400, 900],
+    [1400, 700],
     [2500, 800],
     [3500, 900],
     [4600, 350],
@@ -29,8 +29,7 @@ export function createLevel1() {
   const leaves = [
     [600, 110, 140], [800, 210, 140],
     [1240, 75, 110],
-    [1700, 110, 160], [1920, 210, 140], [2120, 110, 140],
-    [2370, 75, 110],
+    [1700, 110, 160], [1920, 210, 140],
     [2800, 110, 150], [3000, 200, 130], [3200, 110, 140],
     [3410, 75, 110],
     [3900, 110, 150], [4120, 210, 140], [4320, 110, 140],
@@ -42,7 +41,7 @@ export function createLevel1() {
   }))
 
   // Mud patches slow you down: [x, width]
-  const mud = [[820, 170], [2000, 200], [3800, 200]].map(([x, w]) => ({ x, w }))
+  const mud = [[820, 170], [2000, 100], [3800, 200]].map(([x, w]) => ({ x, w }))
 
   // Briars: [centre x, width, height]. Each is a grid of 36x60 sections that
   // the tongue cuts away one at a time. Thickets are one section thick, so
@@ -64,7 +63,7 @@ export function createLevel1() {
     beetles: [[620, 100], [4420, 110]],
     centipedes: [[3080, 120]],
     pillbugs: [[1950, 90]],
-    owls: [[2250, 285]],
+    owls: [[3020, 285]],
     cranes: [[3900, 90]],
   }
   // M7 items: [x, y]. Dragonflies grant glide, peppers a fire tongue, anchors are
@@ -72,7 +71,10 @@ export function createLevel1() {
   const items = {
     dragonflies: [[1300, GROUND_Y - 150], [3400, GROUND_Y - 150]],
     peppers: [[670, GROUND_Y - 128], [4390, GROUND_Y - 128]],
-    anchors: [[2400, GROUND_Y - 190], [4500, GROUND_Y - 190]],
+    anchors: [[4500, GROUND_Y - 190]],
+    glowbugs: [[3700, GROUND_Y - 130], [4130, GROUND_Y - 125]],
+    // Wide gap: a bridge log (pull it across with the tongue)
+    logs: [{ gap_left: 2100, gap_right: 2500, length: 520 }],
   }
   // Shield fireflies: [centre x, height above ground]
   const fireflies = [
@@ -106,6 +108,13 @@ export function createLevel1() {
     fireflies,
     bestiary,
     items,
+    // Dark areas: only light sources (you, glow bugs, fireflies) show what is inside
+    dark: [{ x0: 3560, x1: 4400, fade: 180 }],
+    darknessAt(x) {
+      let d = 0
+      for (const z of this.dark) d = Math.max(d, Math.max(0, Math.min(1, Math.min(x - (z.x0 - z.fade), z.x1 + z.fade - x) / z.fade)))
+      return d
+    },
     // Final boss: lives in the arena at the end of the level. The arena locks
     // the camera to [x0, x0+view] once you pass `trigger`.
     boss: { x: 5300, y: GROUND_Y - 330, arena: { x0: 4640, x1: 5600, trigger: 4820 } },

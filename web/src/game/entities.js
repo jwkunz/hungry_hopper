@@ -148,6 +148,7 @@ export class Firefly extends Entity {
   constructor(x, y) {
     super(x, y, 26, 26)
     this.kind = 'pickup'
+    this.light = 95
     this.base_y = y
     this.t = (x * 3) % 1000
   }

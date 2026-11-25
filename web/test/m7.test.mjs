@@ -16,7 +16,7 @@ test('level has dragonflies, peppers and grapple anchors', () => {
   const g = new Game(CONFIG, createLevel1(), {})
   assert.ok(g.entities.some((e) => e instanceof Dragonfly))
   assert.ok(g.entities.some((e) => e instanceof Pepper))
-  assert.ok(g.entities.filter((e) => e.grapple).length >= 2)
+  assert.ok(g.entities.filter((e) => e.grapple).length >= 1)
 })
 
 test('dragonfly: glide slows the fall only while JUMP is held, and wears off', () => {
@@ -115,7 +115,7 @@ test('an anchor never hurts, and survives the respawn clear zone', () => {
   const g2 = new Game(CONFIG, createLevel1(), {})
   start(g2)
   g2.checkpoint = 0; g2.deaths = 1; g2._resetWorld()
-  assert.ok(g2.entities.filter((e) => e.grapple).length >= 2, 'anchors stay')
+  assert.ok(g2.entities.filter((e) => e.grapple).length >= 1, 'anchors stay')
 })
 
 test('combo multiplier: chained kills score x2, x3...; it times out and resets when hurt', () => {

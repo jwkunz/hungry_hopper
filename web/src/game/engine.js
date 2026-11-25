@@ -2,7 +2,7 @@ import { CONFIG, frogHitbox } from './config.js'
 import { Frog } from './frog.js'
 import { createLevel1 } from './level.js'
 import { spawnEntities } from './spawn.js'
-import { drawBackground, drawWorld, drawWater, drawHud, drawDebug, drawScreen } from './render.js'
+import { drawBackground, drawWorld, drawWater, drawHud, drawDebug, drawScreen, drawDarkness } from './render.js'
 import { rectsOverlap, segmentHitsRect, isStomp } from './collision.js'
 import { loadHighScore, saveHighScore } from './storage.js'
 
@@ -172,6 +172,7 @@ export class Game {
     // spawn point so you never respawn inside a briar or under a mosquito.
     const lo = x - this.cfg.spawn_clear_behind
     const hi = x + this.cfg.spawn_clear_ahead
+    this.level.solids = this.level.solids.filter((sd) => sd.kind !== 'log') // bridges reset with their log
     this.entities = spawnEntities(this.level).filter(
       (e) => (this.checkpoint < 0 || e.cx > x) && !(e.cx > lo && e.cx < hi && e.kind === 'enemy') &&
         !(e.is_boss && this.boss_defeated),
@@ -270,6 +271,23 @@ export class Game {
             this.last_deflect_shot = frog.shot_id
             this._emit('cut')
           }
+          break
+        }
+      }
+    }
+
+    // Tongue vs pullable objects (the bridge log)
+    {
+      const tseg = frog.tongueSegment()
+      if (tseg) {
+        for (const e of this.entities) {
+          const r = e.pullable && e.pullRect?.()
+          if (!r || !segmentHitsRect(tseg.x1, tseg.y1, tseg.x2, tseg.y2, r, cfg.tongue_thickness / 2)) continue
+          if (e.pull()) {
+            this._emit('grab')
+            this._addScore(cfg.points_pickup, r.x + r.w / 2, r.y, 'PULL!')
+          }
+          frog.retractTongue()
           break
         }
       }
@@ -484,6 +502,10 @@ export class Game {
       this.frog.glide_ms = this.cfg.glide_ms
       this._emit('powerup')
       this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'GLIDE! (hold JUMP)')
+    } else if (e.power === 'light') {
+      this.frog.light_ms = this.cfg.light_ms
+      this._emit('powerup')
+      this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'GLOW!')
     } else if (e.power === 'fire') {
       this.frog.fire_ms = this.cfg.fire_ms
       this._emit('powerup')
@@ -572,6 +594,10 @@ export class Game {
     }
     this.frog.draw(ctx)
     drawWater(ctx, level, cam, cfg, this.elapsed_ms, this.particles)
+    ctx.restore()
+    drawDarkness(ctx, this, cam)
+    ctx.save()
+    ctx.translate(-cam, 0)
     for (const p of this.popups) this._drawPopup(ctx, p)
     if (this.debug) drawDebug(ctx, this)
     ctx.restore()

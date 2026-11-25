@@ -76,6 +76,7 @@ export class Frog {
     this.shield = false
     this.glide_ms = 0 // dragonfly power: hold JUMP in the air to glide
     this.fire_ms = 0 // pepper power: the tongue burns
+    this.light_ms = 0 // glow bug power: you light up dark areas
     this.gliding = false
     this.grapple = null // { x, y, phase: 'reel' | 'hang', ms }
     this.invuln_ms = 0
@@ -180,6 +181,7 @@ export class Frog {
     this.coyote_ms = this.grounded ? cfg.coyote_ms : Math.max(0, this.coyote_ms - dt_ms)
     this.glide_ms = Math.max(0, this.glide_ms - dt_ms)
     this.fire_ms = Math.max(0, this.fire_ms - dt_ms)
+    this.light_ms = Math.max(0, this.light_ms - dt_ms)
     if (this.grapple) {
       this._updateGrapple(dt_ms, input, level)
       return

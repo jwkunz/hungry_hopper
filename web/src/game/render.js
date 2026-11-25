@@ -198,6 +198,7 @@ export function drawHud(ctx, game) {
     hy += 22
   }
   if (game.frog.glide_ms > 0) line(`GLIDE ${(game.frog.glide_ms / 1000).toFixed(0)}s`, '#8fe8ff')
+  if (game.frog.light_ms > 0) line(`GLOW ${(game.frog.light_ms / 1000).toFixed(0)}s`, '#9dffcf')
   if (game.frog.fire_ms > 0) line(`FIRE ${(game.frog.fire_ms / 1000).toFixed(0)}s`, '#ffa04a')
   if (game.combo >= 2 && game.combo_ms > 0) line(`COMBO x${Math.min(cfg.combo_max, game.combo)}`, '#ffe97a')
   // Boss health: one eye per hit point, shown once the fight has begun
@@ -326,4 +327,71 @@ export function drawWater(ctx, level, cam, cfg, t, particles = []) {
     ctx.stroke()
   }
   ctx.globalAlpha = 1
+}
+
+
+// ---- dark areas ----
+// Everything that lights up the dark: [{ x, y, r }] in world coordinates.
+export function lightSources(game) {
+  const { cfg, frog } = game
+  const out = []
+  if (!frog.dead) {
+    let r = cfg.base_light
+    if (frog.light_ms > 0) r = cfg.base_light + (cfg.light_radius - cfg.base_light) * Math.min(1, frog.light_ms / 2000)
+    out.push({ x: frog.x + frog.w / 2, y: frog.y + frog.h / 2, r })
+    if (frog.fire_ms > 0) {
+      const tip = frog.tongueSegment()
+      if (tip) out.push({ x: tip.x2, y: tip.y2, r: 85 })
+    }
+  }
+  for (const e of game.entities) if (e.light && e.alive !== false) out.push({ x: e.cx, y: e.cy, r: e.light })
+  return out
+}
+
+let darkLayer = null
+// Draws the darkness on top of the world (before the HUD). Dark where
+// level.darknessAt(x) > 0, with soft holes cut around every light source.
+export function drawDarkness(ctx, game, cam) {
+  const { cfg, level } = game
+  if (!level.dark || typeof document === 'undefined') return
+  const W = cfg.view_w
+  const H = cfg.view_h
+  const left = level.darknessAt(cam)
+  const right = level.darknessAt(cam + W)
+  let any = left > 0 || right > 0
+  if (!any) for (let x = cam; x <= cam + W; x += 120) if (level.darknessAt(x) > 0) { any = true; break }
+  if (!any) return
+  if (!darkLayer) darkLayer = document.createElement('canvas')
+  const scale = ctx.getTransform().a || 1
+  const pw = Math.round(W * scale)
+  const ph = Math.round(H * scale)
+  if (darkLayer.width !== pw || darkLayer.height !== ph) { darkLayer.width = pw; darkLayer.height = ph }
+  const d = darkLayer.getContext('2d')
+  d.setTransform(scale, 0, 0, scale, 0, 0)
+  d.globalCompositeOperation = 'source-over'
+  d.clearRect(0, 0, W, H)
+  // horizontal gradient of darkness across the screen
+  const grad = d.createLinearGradient(0, 0, W, 0)
+  const stops = 24
+  for (let i = 0; i <= stops; i++) {
+    const a = level.darknessAt(cam + (W * i) / stops) * cfg.dark_alpha
+    grad.addColorStop(i / stops, `rgba(2,6,14,${a.toFixed(3)})`)
+  }
+  d.fillStyle = grad
+  d.fillRect(0, 0, W, H)
+  // holes
+  d.globalCompositeOperation = 'destination-out'
+  for (const l of lightSources(game)) {
+    const x = l.x - cam
+    const g = d.createRadialGradient(x, l.y, 0, x, l.y, l.r)
+    g.addColorStop(0, 'rgba(0,0,0,1)')
+    g.addColorStop(0.55, 'rgba(0,0,0,0.85)')
+    g.addColorStop(1, 'rgba(0,0,0,0)')
+    d.fillStyle = g
+    d.fillRect(x - l.r, l.y - l.r, l.r * 2, l.r * 2)
+  }
+  ctx.save()
+  ctx.setTransform(1, 0, 0, 1, 0, 0)
+  ctx.drawImage(darkLayer, 0, 0)
+  ctx.restore()
 }
