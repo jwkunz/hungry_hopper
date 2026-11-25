@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.2.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.3.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -18,8 +18,9 @@ version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 **Rules:** eat enemies with the tongue, or land on top of them to stomp. Any
 other contact kills you instantly — unless you hold a **shield** from a glowing
-firefly, which absorbs one hit. Falling into a pit is always fatal. Add
-`?debug` to the URL to see hitboxes.
+firefly, which absorbs one hit. Falling into a pit is always fatal. You have 3 lives and respawn at the last
+checkpoint flag; reach the red flag at the end to win. Tap the speaker button (or
+press **M**) to mute. Add `?debug` to the URL to see hitboxes.
 
 The on-screen buttons are always shown so the game works on touch devices
 (it is intended to be embedded in an Android app).
@@ -63,7 +64,7 @@ in the repo go to **Settings → Pages → Build and deployment → Source** and
 ## Project layout
 
 ```
-tools/                   Asset helper scripts (e.g. make_mosquito_atlas.py)
+tools/                   Asset scripts: make_mosquito_atlas.py, convert_audio.sh
 PLAN.md                  Game vision, mechanics and milestone roadmap
 .github/workflows/       Builds + deploys to GitHub Pages on push to main
 web/                     All web content
@@ -84,8 +85,10 @@ web/                     All web content
       collision.js       World collision + tongue/stomp/overlap tests
       level.js           Level 1 data (ground, leaves, puddles)
       render.js          Placeholder world art, HUD, debug overlay
+      audio.js           Web Audio sfx + music, mute
+      storage.js         High-score persistence
       sprite.js, physics.js, input.js
-    assets/              sprites (frog in use; creatures, sounds, music not yet)
+    assets/              sprites, audio/ (MP3s in use), audio_source/ (original WAVs)
 ```
 
 ### Architecture notes
@@ -101,12 +104,16 @@ touch buttons both write to the same `input` object. Game state lives in the `Ga
 ### Assets
 
 Sprites are imported from JS (`import img from '.../frog.png'`) so Vite
-inlines them. The sound and music `.wav` files total about 9 MB; they are
-kept in `src/assets` but deliberately not imported yet, so they don't bloat the
-single-file build. Import them when the audio code is added (consider
-compressing to `.ogg`/`.mp3` first).
+inlines them. Sounds and music live in `src/assets/audio` as small MP3s
+(generated from the original WAVs in `audio_source/` by `tools/convert_audio.sh`)
+so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.3.0
+- Title, game-over and level-complete screens; 3 lives; checkpoints; level goal with life bonus.
+- Sound effects and music (compressed to MP3), mute button / `M` key.
+- High score saved locally. Test harness can now import the whole game core.
 
 ### 2.2.0
 - Tongue now works in mid-air; its hit area follows the animation and aim angle.

@@ -58,6 +58,7 @@ export class Frog {
     this.tongue = new Sprite(tongueSheet, TONGUE_MASKS, 'right 0', 0, 0, this.scale)
     this.crosshairs = new Sprite(crosshairsSheet, CROSSHAIR_MASKS, 'on', 0, 0, this.scale)
     this.mouth = { x: 0, y: 0 } // where the tongue leaves the body (world coords)
+    this.events = [] // sound/feedback events for the engine to drain ('jump', 'tongue', 'land')
 
     this.respawn(x, y)
   }
@@ -160,6 +161,7 @@ export class Frog {
     if (input.eat && this.tongue_step < 0) {
       this.tongue_step = 0
       this.tongue_timer_ms = 0
+      this.events.push('tongue')
     } else if (this.tongue_step >= 0) {
       this._updateTongue(dt_ms)
     }
@@ -183,6 +185,7 @@ export class Frog {
       this.grounded = false
       this.jump_buffer_ms = 0
       this.coyote_ms = 0
+      this.events.push('jump')
     }
     if (this.jumping && !input.jump && p.v_y < -cfg.jump_speed * cfg.jump_cut) {
       p.v_y = -cfg.jump_speed * cfg.jump_cut
@@ -191,8 +194,10 @@ export class Frog {
     // --- Integrate + collide ---
     const prevX = p.p_x
     const prevY = p.p_y
+    const prevVy = p.v_y
     p.step(dt)
     const hit = moveAndCollide(p, this.w, this.h, prevX, prevY, level.solids)
+    if (hit.grounded && !this.grounded && prevVy > 350) this.events.push('land')
     this.grounded = hit.grounded
     if (this.grounded) this.jumping = false
 

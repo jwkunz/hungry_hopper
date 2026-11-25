@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { CONFIG } from '../game/config.js'
 import { Game } from '../game/engine.js'
 import { attachKeyboard, createInput } from '../game/input.js'
+import { audio } from '../game/audio.js'
 import TouchControls from './TouchControls.jsx'
+import SoundToggle from './SoundToggle.jsx'
 
 const ASPECT = CONFIG.view_w / CONFIG.view_h
 
@@ -11,6 +13,7 @@ const ASPECT = CONFIG.view_w / CONFIG.view_h
 export default function GameCanvas() {
   const stageRef = useRef(null)
   const canvasRef = useRef(null)
+  const gameRef = useRef(null)
   const [input] = useState(createInput)
   const [box, setBox] = useState({ w: CONFIG.view_w, h: CONFIG.view_h })
 
@@ -41,8 +44,19 @@ export default function GameCanvas() {
     const canvas = canvasRef.current
     const ctx = canvas.getContext('2d')
     const detachKeys = attachKeyboard(input)
+
+    // Audio needs a user gesture; 'm' toggles mute.
+    const unlock = () => audio.unlock()
+    const onKey = (e) => {
+      unlock()
+      if (e.key === 'm' || e.key === 'M') audio.toggleMuted()
+    }
+    window.addEventListener('pointerdown', unlock)
+    window.addEventListener('keydown', onKey)
     const debug = new URLSearchParams(window.location.search).has('debug')
-    const game = new Game(CONFIG, undefined, { debug })
+    const game = new Game(CONFIG, undefined, { debug, onEvent: (e) => audio.handle(e) })
+    gameRef.current = game
+    window.__audio = audio
     window.__game = game // handy for debugging / tests
 
     let raf = 0
@@ -61,13 +75,21 @@ export default function GameCanvas() {
     return () => {
       cancelAnimationFrame(raf)
       detachKeys()
+      window.removeEventListener('pointerdown', unlock)
+      window.removeEventListener('keydown', onKey)
+      audio.music(null)
     }
   }, [input])
 
   return (
     <div className="stage" ref={stageRef}>
       <div className="viewport" style={{ width: box.w, height: box.h }}>
-        <canvas ref={canvasRef} style={{ width: box.w, height: box.h }} />
+        <canvas
+          ref={canvasRef}
+          style={{ width: box.w, height: box.h }}
+          onPointerDown={() => gameRef.current?.tap()}
+        />
+        <SoundToggle />
         <TouchControls input={input} />
       </div>
     </div>

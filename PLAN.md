@@ -73,11 +73,15 @@ keyboard and touch buttons both just set flags on it.
 - [x] Death hop → respawn; score + popups + HUD (eat = 200, stomp = 100, pickup = 50)
 - [x] `?debug` URL flag draws hitboxes and the tongue segment
 
-### M3 — Game flow
-- [ ] States: title → play → dead → game over / level complete
-- [ ] Lives, instant respawn at checkpoint (lily-pad flags)
-- [ ] Sound effects (assets exist: boing, slurp, gulp, splat, hit, hurt, …) and music
-- [ ] Local high score
+### M3 — Game flow *(2.3.0)*
+- [x] States: title → play → dying → game over / level complete → title (tap or JUMP/TONGUE to continue)
+- [x] 3 lives; death respawns at the last checkpoint (lily-pad flags); cleared enemies behind it stay cleared
+- [x] Level goal flag, life bonus (500 per life left)
+- [x] Sound effects and looping music (Web Audio, unlocked on first tap/key), mute button + `M`
+- [x] Local high score (localStorage)
+- [x] Audio shipped as small MP3s (`tools/convert_audio.sh`; WAV originals kept in `audio_source/`)
+- [x] Game-flow unit tests (title, lives, checkpoints, goal, shield)
+- [ ] Pause button (still to do)
 
 ### M4 — Environment
 - [ ] Water puddles: submerge to hide (breath meter); swimming sections

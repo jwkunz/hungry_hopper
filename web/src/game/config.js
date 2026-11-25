@@ -35,6 +35,9 @@ export const CONFIG = {
   invuln_ms: 1500, // grace period after a shield absorbs a hit
   death_ms: 1000, // pause on death before respawning
   death_hop: 520, // upward speed of the death hop
+  start_lives: 3,
+  points_life_bonus: 500, // per remaining life when the level is cleared
+  screen_min_ms: 600, // ignore start taps this soon after a screen appears
   points_eat: 200,
   points_stomp: 100,
   points_pickup: 50,

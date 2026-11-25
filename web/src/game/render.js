@@ -41,7 +41,7 @@ export function drawBackground(ctx, cam, cfg, level) {
   }
 }
 
-export function drawWorld(ctx, level, cam, cfg) {
+export function drawWorld(ctx, level, cam, cfg, activeCheckpoint = -1) {
   const left = cam - 50
   const right = cam + cfg.view_w + 50
 
@@ -85,6 +85,24 @@ export function drawWorld(ctx, level, cam, cfg) {
     ctx.stroke()
   }
 
+  // Checkpoints: a lily pad with a flag; turns gold once reached
+  level.checkpoints.forEach((cp, i) => {
+    if (cp.x > right || cp.x < left) return
+    const on = i <= activeCheckpoint
+    ctx.fillStyle = '#3f9a45'
+    ctx.beginPath()
+    ctx.ellipse(cp.x, level.ground_y + 2, 34, 7, 0, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.fillStyle = '#6b4a2a'
+    ctx.fillRect(cp.x - 2, level.ground_y - 62, 4, 62)
+    ctx.fillStyle = on ? '#ffd84a' : '#9aa59c'
+    ctx.beginPath()
+    ctx.moveTo(cp.x + 2, level.ground_y - 62)
+    ctx.lineTo(cp.x + 36, level.ground_y - 50)
+    ctx.lineTo(cp.x + 2, level.ground_y - 38)
+    ctx.fill()
+  })
+
   // Goal marker
   ctx.fillStyle = '#e8d44d'
   ctx.fillRect(level.goal_x, level.ground_y - 90, 5, 90)
@@ -104,6 +122,13 @@ export function drawHud(ctx, game) {
   ctx.lineWidth = 4
   ctx.strokeStyle = 'rgba(0,0,0,.65)'
   ctx.fillStyle = '#fff'
+  ctx.textAlign = 'left'
+  const lv = `LIVES ${'♥'.repeat(Math.max(0, game.lives))}`
+  ctx.strokeText(lv, 16, 32)
+  ctx.fillStyle = '#ff7a8a'
+  ctx.fillText(lv, 16, 32)
+  ctx.fillStyle = '#fff'
+  ctx.textAlign = 'right'
   const txt = `SCORE ${String(game.score).padStart(6, '0')}`
   ctx.strokeText(txt, cfg.view_w - 16, 32)
   ctx.fillText(txt, cfg.view_w - 16, 32)
@@ -137,6 +162,53 @@ export function drawDebug(ctx, game) {
     ctx.moveTo(seg.x1, seg.y1)
     ctx.lineTo(seg.x2, seg.y2)
     ctx.stroke()
+  }
+  ctx.restore()
+}
+
+// Title / game-over / level-complete screens drawn over the idling world
+export function drawScreen(ctx, game) {
+  const { cfg } = game
+  const W = cfg.view_w
+  const H = cfg.view_h
+  const cx = W / 2
+  const blink = Math.floor(game.state_ms / 500) % 2 === 0
+  const text = (str, y, size, color = '#fff') => {
+    ctx.font = `bold ${size}px system-ui, sans-serif`
+    ctx.lineWidth = Math.max(3, size / 7)
+    ctx.strokeStyle = 'rgba(0,0,0,.7)'
+    ctx.fillStyle = color
+    ctx.strokeText(str, cx, y)
+    ctx.fillText(str, cx, y)
+  }
+  ctx.save()
+  ctx.textAlign = 'center'
+  ctx.fillStyle = 'rgba(5,15,10,0.55)'
+  ctx.fillRect(0, 0, W, H)
+  const hi = `HIGH SCORE ${String(game.high_score).padStart(6, '0')}`
+  const prompt = 'TAP  or press JUMP / TONGUE'
+
+  switch (game.state) {
+    case 'title':
+      text('HUNGRY', 140, 78, '#8fe37a')
+      text('HOPPER', 215, 78, '#8fe37a')
+      text(hi, 270, 22, '#ffe97a')
+      if (blink) text(prompt + ' to start', 330, 24)
+      text(`v${typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : ''}`, H - 16, 14, '#9fb5a6')
+      break
+    case 'gameover':
+      text('GAME OVER', 170, 72, '#ff7a7a')
+      text(`SCORE ${String(game.score).padStart(6, '0')}`, 235, 30)
+      text(game.new_high ? '★ NEW HIGH SCORE! ★' : hi, 280, 22, '#ffe97a')
+      if (blink) text(prompt, 350, 24)
+      break
+    case 'complete':
+      text('LEVEL COMPLETE!', 150, 62, '#8fe37a')
+      text(`Life bonus  +${game.bonus ?? 0}`, 215, 24, '#ffe97a')
+      text(`SCORE ${String(game.score).padStart(6, '0')}`, 262, 32)
+      text(game.new_high ? '★ NEW HIGH SCORE! ★' : hi, 305, 22, '#ffe97a')
+      if (blink) text(prompt, 370, 24)
+      break
   }
   ctx.restore()
 }

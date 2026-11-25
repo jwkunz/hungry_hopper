@@ -41,6 +41,9 @@ export function createLevel1() {
     [870, 205], [1990, 195], [3065, 215], [4190, 205],
   ].map(([x, y]) => ({ x, y }))
 
+  // Checkpoints (lily-pad flags on the ground): x position
+  const checkpoints = [1500, 2600, 3600, 4700].map((x) => ({ x }))
+
   const solids = [
     ...segments.map((s) => ({ x: s.x, y: GROUND_Y, w: s.w, h: GROUND_DEPTH })),
     ...leaves.map((l) => ({ x: l.x, y: l.y, w: l.w, h: 14, oneWay: true })),
@@ -57,6 +60,7 @@ export function createLevel1() {
     segments,
     leaves,
     puddles,
+    checkpoints,
     mosquitos,
     fireflies,
     solids,
