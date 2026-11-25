@@ -174,3 +174,80 @@ test('aiming higher cuts a different section of the wall', () => {
   assert.equal(cut.length, 1)
   assert.ok(cut[0].row >= 1, `cut a higher row (${cut[0].row})`)
 })
+
+// ---- aggressive mosquitos ----
+import { Mosquito, chaseSpeed } from '../src/game/entities.js'
+
+test('chase speed is inversely proportional to distance (clamped)', () => {
+  // inside the uncapped band: halving the distance doubles the speed
+  const a = chaseSpeed(400, CONFIG)
+  const b = chaseSpeed(200, CONFIG)
+  assert.ok(Math.abs(b / a - 2) < 1e-9, `${a} -> ${b}`)
+  assert.ok(chaseSpeed(1000, CONFIG) === CONFIG.chase_min_speed, 'floor far away')
+  assert.ok(chaseSpeed(5, CONFIG) === CONFIG.chase_max_speed, 'cap up close')
+  let prev = Infinity
+  for (let d = 20; d <= 480; d += 20) { const v = chaseSpeed(d, CONFIG); assert.ok(v <= prev); prev = v }
+})
+
+function setupMosquito(g, dx, dy = 0) {
+  const f = g.frog
+  const m = new Mosquito(f.x + f.w / 2 + dx, f.y + f.h / 2 + dy, 60)
+  g.entities = [m]
+  return m
+}
+
+test('a mosquito in aggro range dives at the frog, getting faster as it closes in', () => {
+  const g = mk()
+  const m = setupMosquito(g, 400, -60)
+  const samples = []
+  for (let i = 0; i < 400 && g.state === GameState.PLAY; i++) {
+    g.update(16, none)
+    const f = g.frog
+    const d = Math.hypot(m.cx - (f.x + f.w / 2), m.cy - (f.y + f.h / 2))
+    samples.push({ d, v: Math.hypot(m.vx, m.vy) })
+  }
+  assert.equal(m.mode, 'chase')
+  assert.ok(samples[samples.length - 1].d < samples[0].d - 150, 'closed the distance')
+  const early = samples.filter((s) => s.d > 330 && s.d < 400)
+  const late = samples.filter((s) => s.d < 160)
+  const avg = (a) => a.reduce((s, x) => s + x.v, 0) / a.length
+  assert.ok(early.length && late.length)
+  assert.ok(avg(late) > avg(early) * 1.5, `late ${avg(late).toFixed(0)} vs early ${avg(early).toFixed(0)}`)
+  assert.ok(Math.max(...samples.map((s) => s.v)) <= CONFIG.chase_max_speed * 1.02, 'never exceeds the cap')
+  assert.equal(g.state, GameState.DYING, 'it got you (you did nothing)')
+})
+
+test('out of range it just patrols; it can be tongued before it arrives', () => {
+  const g = mk()
+  const far = setupMosquito(g, 700)
+  run(g, 800)
+  assert.equal(far.mode, 'patrol')
+  assert.ok(Math.abs(far.cx - far.home_x) <= far.range + 12, 'stayed on its beat')
+
+  const g2 = mk()
+  const m = setupMosquito(g2, 330, -20)
+  let eaten = false
+  for (let i = 0; i < 300 && g2.state === GameState.PLAY; i++) {
+    // fire the tongue when it is in range
+    const d = Math.hypot(m.cx - g2.frog.x, m.cy - g2.frog.y)
+    g2.update(16, { ...none, eat: d < 250 })
+    if (m.eaten || m.gone) { eaten = true; break }
+  }
+  assert.ok(eaten || g2.score > 0, 'frog ate it first')
+  assert.equal(g2.state, GameState.PLAY)
+})
+
+test('hiding underwater makes mosquitos lose interest and fly home', () => {
+  const g = mk()
+  const pond = g.level.ponds[0]
+  place(g, pond.x + pond.w / 2 - g.frog.w / 2, pond.floor_y - g.frog.h - 1)
+  run(g, 300)
+  assert.ok(g.frog.hidden)
+  const m = new Mosquito(pond.x + 40, g.level.ground_y - 120, 60)
+  m.home_x = pond.x + 300; m.home_y = g.level.ground_y - 150 // home is away from the pond
+  g.entities = [m]
+  run(g, 1200)
+  assert.notEqual(m.mode, 'chase')
+  assert.equal(g.state, GameState.PLAY)
+  assert.ok(Math.hypot(m.cx - m.home_x, m.cy - m.home_y) < 200, 'heading back to its spot')
+})

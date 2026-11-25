@@ -24,11 +24,19 @@ class Entity {
   die() { this.alive = false; this.death_ms = 0 }
 }
 
+// Chase speed is inversely proportional to the distance to the target:
+// v = k / d, clamped. (Far away = lazy drift, close = a fast swoop.)
+export function chaseSpeed(d, cfg) {
+  return Math.min(cfg.chase_max_speed, Math.max(cfg.chase_min_speed, cfg.chase_k / Math.max(d, 1)))
+}
+
 const MQ_CELL = { w: 190, h: 145 }
 const MQ_MASKS = new Map([0, 1, 2].map((i) => [`flap ${i}`, new SpriteMask(i * MQ_CELL.w, 0, MQ_CELL.w, MQ_CELL.h)]))
 const MQ_ANIM = [0, 1, 2, 1]
 
-// A mosquito patrolling back and forth in a lazy hover.
+// A mosquito that patrols and hovers lazily until the frog comes within its
+// aggro range, then dives at it (speed = k / distance). It loses interest if
+// the frog hides underwater or dies, and drifts back to its patrol spot.
 export class Mosquito extends Entity {
   constructor(x, y, range = 140) {
     super(x, y, 56, 34)
@@ -36,13 +44,18 @@ export class Mosquito extends Entity {
     this.home_y = y
     this.range = range
     this.dir = -1
-    this.speed = 70
+    this.speed = 70 // patrol speed
+    this.vx = 0
+    this.vy = 0
+    this.mode = 'patrol' // 'patrol' | 'chase' | 'return'
+    this.aggressive = true
     this.t = (x * 7) % 1000 // desync neighbours
+    this.anim = this.t
     this.stompable = true
     this.sprite = new Sprite(mosquitoAtlas, MQ_MASKS, 'flap 0', 0, 0, 0.5)
   }
 
-  update(dt_ms) {
+  update(dt_ms, game) {
     this.t += dt_ms
     if (this.eaten) return // the engine moves it along with the tongue
     if (!this.alive) {
@@ -51,21 +64,68 @@ export class Mosquito extends Entity {
       if (this.death_ms > 700) this.gone = true
       return
     }
-    this.cx += this.dir * this.speed * (dt_ms / 1000)
-    if (this.cx < this.home_x - this.range) this.dir = 1
-    if (this.cx > this.home_x + this.range) this.dir = -1
-    this.cy = this.home_y + Math.sin(this.t / 260) * 16
+    const dt = dt_ms / 1000
+    const cfg = game?.cfg
+    const f = game?.frog
+
+    // Can it see the frog? (alive, in range, not hiding underwater)
+    let dx = 0
+    let dy = 0
+    let d = Infinity
+    if (this.aggressive && cfg && f && game.state === 'play' && !f.dead && !f.hidden) {
+      dx = f.x + f.w / 2 - this.cx
+      dy = f.y + f.h / 2 - this.cy
+      d = Math.hypot(dx, dy)
+    }
+    const chasing = cfg && d < cfg.aggro_range
+
+    let dvx
+    let dvy
+    let turn = 4
+    if (chasing) {
+      this.mode = 'chase'
+      const v = chaseSpeed(d, cfg)
+      dvx = (dx / d) * v
+      dvy = (dy / d) * v
+      turn = cfg.chase_turn
+    } else {
+      const hoverY = this.home_y + Math.sin(this.t / 260) * 16
+      const outside = Math.abs(this.cx - this.home_x) > this.range + 10 || Math.abs(this.cy - hoverY) > 45
+      if (this.mode === 'chase' || outside) this.mode = 'return'
+      else this.mode = 'patrol'
+      if (this.mode === 'return') {
+        const hx = this.home_x - this.cx
+        const hy = this.home_y - this.cy
+        const hd = Math.max(1, Math.hypot(hx, hy))
+        dvx = (hx / hd) * 110
+        dvy = (hy / hd) * 110
+        if (hd < 12) this.mode = 'patrol'
+      } else {
+        if (this.cx < this.home_x - this.range) this.dir = 1
+        if (this.cx > this.home_x + this.range) this.dir = -1
+        dvx = this.dir * this.speed
+        dvy = (hoverY - this.cy) * 3
+      }
+    }
+    const k = Math.min(1, dt * turn)
+    this.vx += (dvx - this.vx) * k
+    this.vy += (dvy - this.vy) * k
+    this.cx += this.vx * dt
+    this.cy += this.vy * dt
+    if (Math.abs(this.vx) > 8) this.facing = this.vx >= 0 ? 1 : -1
+    this.anim += dt_ms * (this.mode === 'chase' ? 1.7 : 1) // flaps faster when angry
   }
 
   draw(ctx) {
     if (this.scale_mul < 0.03) return
     const s = this.sprite
     s.scale = 0.5 * this.scale_mul
-    s.state = `flap ${MQ_ANIM[Math.floor(this.t / 70) % MQ_ANIM.length]}`
-    s.flip = this.dir < 0
+    s.state = `flap ${MQ_ANIM[Math.floor(this.anim / 70) % MQ_ANIM.length]}`
+    const face = this.facing ?? this.dir
+    s.flip = face < 0
     s.alpha = this.alive ? 1 : Math.max(0, 1 - this.death_ms / 700)
     // Bias a little so the body sits in the hitbox (art has a trailing proboscis)
-    s.p_x = this.cx - (MQ_CELL.w * s.scale) / 2 + (this.dir < 0 ? -6 : 6)
+    s.p_x = this.cx - (MQ_CELL.w * s.scale) / 2 + (face < 0 ? -6 : 6)
     s.p_y = this.cy - (MQ_CELL.h * s.scale) / 2
     s.rotation = this.alive ? 0 : this.death_ms / 120
     if (!this.alive) {

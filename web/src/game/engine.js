@@ -312,7 +312,7 @@ export class Game {
     const lo = this.camera_x - cfg.active_margin
     const hi = this.camera_x + cfg.view_w + cfg.active_margin
     for (const e of this.entities) {
-      if (!e.alive || (e.cx > lo && e.cx < hi)) e.update(dt_ms)
+      if (!e.alive || (e.cx > lo && e.cx < hi)) e.update(dt_ms, this)
     }
     this.entities = this.entities.filter((e) => !e.gone)
   }

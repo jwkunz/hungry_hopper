@@ -66,6 +66,14 @@ export const CONFIG = {
   points_stomp: 100,
   points_pickup: 50,
   points_briar: 10, // per section cut
+  // Enemy aggression: once you are inside aggro_range an enemy flies at you at
+  // speed = chase_k / distance (inversely proportional: faster the closer it
+  // gets), clamped to [chase_min_speed, chase_max_speed].
+  aggro_range: 480,
+  chase_k: 36000,
+  chase_min_speed: 45,
+  chase_max_speed: 230,
+  chase_turn: 5, // how quickly it steers (1/s)
   active_margin: 500, // enemies only move within this distance of the screen
 
   // Camera

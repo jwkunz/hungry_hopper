@@ -66,7 +66,7 @@ keyboard and touch buttons both just set flags on it.
 - [x] Entity base class + AABB overlap tests
 - [x] Tongue hitbox that follows the tongue animation/aim → eat on hit (tongue retracts early on a hit)
 - [x] **Tongue works in the air** as well as on the ground
-- [x] First enemy: **mosquito** (hover/patrol, flaps, flips to face its direction)
+- [x] First enemy: **mosquito** (hover/patrol, flaps, flips to face its direction; 2.4.5: aggressive — dives at you at speed ∝ 1/distance within its aggro range, gives up if you hide underwater)
 - [x] Stomp detection (land on top ⇒ kill + bounce, higher if jump is held)
 - [x] **Health model: one hit kills; a shield power-up absorbs one hit** (see below)
 - [x] Firefly pickup grants the shield (touch it or tongue it); 1.5 s invulnerability after it pops
