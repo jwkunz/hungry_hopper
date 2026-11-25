@@ -283,6 +283,16 @@ export class Game {
 
     // Body contacts: stomp, get hit, or collect
     const fb = frog.hitbox
+    // Area hazards (bat shriek and shockwaves)
+    if (!frog.hidden && frog.invuln_ms <= 0) {
+      for (const e of this.entities) {
+        if (e.hazard && e.hazard(fb)) {
+          this._hurt()
+          if (this.state !== GameState.PLAY) return
+          break
+        }
+      }
+    }
     for (const e of this.entities) {
       if (!e.alive || e.harmless || !rectsOverlap(fb, e.hitbox)) continue
       if (e.kind !== 'pickup' && frog.hidden) continue // hiding underwater

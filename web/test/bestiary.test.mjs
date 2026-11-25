@@ -21,16 +21,56 @@ test('level 1 contains every creature type', () => {
   for (const k of ['bat', 'mole', 'beetle', 'centipede', 'pillbug', 'owl', 'crane']) assert.ok(labels.has(k), k)
 })
 
-test('bat hangs, swoops through the frog position, then roosts again', () => {
+test('bat stays put, warns, then shrieks; shockwaves hurt on the ground but can be jumped', () => {
   const b = new Bat(500, G - 250, G)
-  const w = world(500)
-  step(b, w, 100); assert.equal(b.mode, 'swoop')
-  let lowest = 0
-  for (let i = 0; i < 90; i++) { b.update(16, w); lowest = Math.max(lowest, b.cy) }
-  assert.ok(lowest > G - 90, `dived to ${lowest}`)
-  w.frog.hidden = true
-  step(b, w, 3000)
-  assert.equal(b.mode, 'hang'); assert.ok(Math.abs(b.cy - b.home_y) < 6)
+  const w = world(380)
+  step(b, w, 1000); assert.equal(b.mode, 'warn')
+  step(b, w, 700); assert.equal(b.mode, 'shriek')
+  assert.ok(Math.abs(b.cx - 500) < 1 && Math.abs(b.cy - (G - 250)) < 3, 'never moves')
+  const ground = { x: 0, y: G - 56, w: 100, h: 56 }
+  const air = { x: 0, y: G - 130, w: 100, h: 56 } // mid-hop
+  let hitGround = false, hitAir = false
+  for (let i = 0; i < 90; i++) {
+    b.update(16, w)
+    const wx = b.waves[0] ? 500 - b.waves[0].d : 0
+    ground.x = air.x = wx - 50
+    if (b.hazard(ground)) hitGround = true
+    if (b.ms > 600 && b.hazard(air)) hitAir = true
+  }
+  assert.ok(hitGround, 'a frog standing on the ground gets hit')
+  assert.ok(!hitAir, 'a frog hopping over the wave is safe')
+  // near-field blast right below the bat
+  const b2 = new Bat(500, G - 120, G)
+  step(b2, world(500), 1700)
+  assert.equal(b2.mode, 'shriek')
+  assert.ok(b2.hazard({ x: 450, y: G - 140, w: 100, h: 56 }), 'blast hurts when you are right next to it')
+  // out of earshot / dead: nothing
+  const b3 = new Bat(500, G - 250, G)
+  step(b3, world(2000), 3000); assert.equal(b3.mode, 'hang')
+  b2.die(); assert.ok(!b2.hazard({ x: 450, y: G - 140, w: 100, h: 56 }))
+})
+
+test('shriek hurts the frog in the real game, but not under water or with a shield', () => {
+  const g = new Game(CONFIG, createLevel1(), {})
+  start(g)
+  const f = g.frog
+  const bat = new Bat(f.x + f.w / 2, g.level.ground_y - 70, g.level.ground_y)
+  bat.cool = 0
+  g.entities = [bat]
+  f.invuln_ms = 0
+  for (let i = 0; i < 80 && g.state === GameState.PLAY; i++) g.update(16, none)
+  assert.equal(g.state, GameState.DYING, 'the blast killed an unshielded frog')
+
+  const g2 = new Game(CONFIG, createLevel1(), {})
+  start(g2)
+  const bat2 = new Bat(g2.frog.x + g2.frog.w / 2, g2.level.ground_y - 70, g2.level.ground_y)
+  bat2.cool = 0
+  g2.entities = [bat2]
+  g2.frog.shield = true
+  g2.frog.invuln_ms = 0
+  for (let i = 0; i < 80 && !g2.frog.invuln_ms; i++) g2.update(16, none)
+  assert.equal(g2.state, GameState.PLAY, 'shield absorbed it')
+  assert.equal(g2.frog.shield, false)
 })
 
 test('mole is harmless until it pops up, then can be stomped/tongued, then burrows', () => {

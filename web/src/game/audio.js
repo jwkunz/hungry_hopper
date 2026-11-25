@@ -32,6 +32,7 @@ const SFX = {
   splash: { src: splat, volume: 0.4 },
   cut: { src: hit, volume: 0.55 },
   grab: { src: zoink, volume: 0.6 },
+  shriek: { src: hurt, volume: 0.5 },
 }
 const MUSIC = { title: musicTitle, play: musicPlay }
 

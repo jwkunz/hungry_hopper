@@ -70,72 +70,112 @@ function ellipse(ctx, x, y, rx, ry, fill, stroke) {
 }
 
 // ---------------------------------------------------------------- BAT
-// Hangs upside-down until you come near, then swoops down in a U-shaped arc
-// through where you were standing, and flutters back up to roost.
+// Hangs where it is and never moves. When you come within earshot it opens its
+// mouth (warning), then SHRIEKS: a blast that hurts if you are close, plus two
+// sonic shockwaves that race along the ground in both directions. Hop over the
+// shockwaves, stand on a leaf, hide underwater, or kill the bat.
 export class Bat extends Critter {
   constructor(x, y, ground_y) {
     super(x, y, 44, 28, ground_y)
     this.home_x = x
     this.home_y = y
     this.flying = true
-    this.mode = 'hang' // hang | swoop | return
-    this.u = 0
-    this.cool = 0
-    this.vy = 0
+    this.mode = 'hang' // hang | warn | shriek
+    this.ms = 0
+    this.cool = 900
+    this.waves = [] // {dir, d} distance travelled from under the bat
   }
   _deathStep(dt_ms) { this.cy += (dt_ms / 1000) * (240 + this.death_ms) }
+
   update(dt_ms, game) {
     this.t += dt_ms
-    if (this._dying(dt_ms)) return
-    const dt = dt_ms / 1000
+    if (this._dying(dt_ms)) { this.waves = []; return }
+    this.ms += dt_ms
     this.cool = Math.max(0, this.cool - dt_ms)
+    this.cy = this.home_y + Math.sin(this.t / 700) * 1.5
     if (this.mode === 'hang') {
-      this.cy = this.home_y + Math.sin(this.t / 600) * 2
-      const s = this._sees(game, 340, 420)
-      if (s && !this.cool) {
-        this.mode = 'swoop'
-        this.u = 0
-        this.sx = this.cx; this.sy = this.cy
-        this.tx = s.f.x + s.f.w / 2
-        this.ty = Math.min(this.ground_y - 26, s.f.y + s.f.h / 2)
-        this.face = s.dx >= 0 ? 1 : -1
+      const s = this._sees(game, 520, 460)
+      if (s && !this.cool) { this.mode = 'warn'; this.ms = 0 }
+    } else if (this.mode === 'warn') {
+      if (this.ms >= 650) {
+        this.mode = 'shriek'; this.ms = 0
+        this.waves = [{ dir: -1, d: 0 }, { dir: 1, d: 0 }]
+        game?._emit?.('shriek')
       }
-    } else if (this.mode === 'swoop') {
-      this.u = Math.min(1, this.u + dt_ms / 1550)
-      const u = this.u
-      const ex = 2 * this.tx - this.sx
-      const cx = this.tx
-      const cy = 2 * this.ty - this.sy
-      const a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u
-      this.cx = a * this.sx + b * cx + c * ex
-      this.cy = a * this.sy + b * cy + c * this.sy
-      this.face = ex >= this.sx ? 1 : -1
-      if (this.u >= 1) this.mode = 'return'
     } else {
-      const dx = this.home_x - this.cx, dy = this.home_y - this.cy
-      const d = Math.max(1, Math.hypot(dx, dy))
-      const v = Math.min(d, 120 * dt)
-      this.cx += (dx / d) * v
-      this.cy += (dy / d) * v
-      if (d < 4) { this.mode = 'hang'; this.cool = 1800; this.face = 1 }
+      for (const w of this.waves) w.d += (dt_ms / 1000) * 230
+      if (this.ms >= 1900) { this.mode = 'hang'; this.ms = 0; this.cool = 2600; this.waves = [] }
     }
   }
+
+  // The blast near the bat and the ground shockwaves. Called by the engine.
+  hazard(fb) {
+    if (!this.alive || this.mode !== 'shriek') return false
+    if (this.ms < 500) { // near-field blast
+      const cx = fb.x + fb.w / 2, cy = fb.y + fb.h / 2
+      if (Math.hypot(cx - this.cx, cy - this.cy) < 110 + fb.w / 2) return true
+    }
+    for (const w of this.waves) {
+      const wx = this.home_x + w.dir * w.d
+      const box = { x: wx - 14, y: this.ground_y - 48, w: 28, h: 48 }
+      if (fb.x < box.x + box.w && fb.x + fb.w > box.x && fb.y < box.y + box.h && fb.y + fb.h > box.y) return true
+    }
+    return false
+  }
+
+  draw(ctx) {
+    if (this.alive && this.mode === 'shriek') {
+      ctx.save()
+      ctx.lineCap = 'round'
+      // expanding rings of sound
+      for (let k = 0; k < 3; k++) {
+        const r = (this.ms - k * 160) * 0.22
+        if (r <= 6 || r > 230) continue
+        ctx.strokeStyle = `rgba(190,235,255,${0.7 * (1 - r / 230)})`
+        ctx.lineWidth = 4
+        ctx.beginPath(); ctx.arc(this.cx, this.cy, r, 0.15, Math.PI - 0.15); ctx.stroke()
+      }
+      // ground shockwaves
+      for (const w of this.waves) {
+        const wx = this.home_x + w.dir * w.d
+        const fade = clamp(1 - w.d / 440, 0.15, 1)
+        for (let k = 0; k < 3; k++) {
+          const off = -w.dir * k * 9
+          ctx.strokeStyle = `rgba(200,240,255,${fade * (1 - k * 0.28)})`
+          ctx.lineWidth = 4
+          ctx.beginPath()
+          ctx.arc(wx + off - w.dir * 14, this.ground_y - 22, 24 + k * 2, w.dir > 0 ? -1.0 : Math.PI - 1.0 - 0, w.dir > 0 ? 1.0 : Math.PI + 1.0)
+          ctx.stroke()
+        }
+      }
+      ctx.restore()
+    } else if (this.alive && this.mode === 'warn') {
+      // little tell on the ground where the waves will start
+      ctx.save()
+      ctx.fillStyle = `rgba(190,235,255,${0.18 + 0.12 * Math.sin(this.t / 40)})`
+      ctx.beginPath(); ctx.ellipse(this.home_x, this.ground_y - 2, 40, 6, 0, 0, TAU); ctx.fill()
+      ctx.restore()
+    }
+    super.draw(ctx)
+  }
+
   paint(ctx) {
-    const hang = this.mode === 'hang' && this.alive
-    const flap = hang ? 0.15 : Math.sin(this.t / 55)
+    const noisy = this.mode !== 'hang' && this.alive
+    const shake = noisy ? Math.sin(this.t / 25) * (this.mode === 'shriek' ? 1.6 : 0.9) : 0
+    ctx.translate(shake, 0)
+    const spread = noisy ? 0.25 + 0.2 * Math.sin(this.t / 45) : 0
     ctx.fillStyle = '#2b2236'
-    // wings
     for (const sgn of [-1, 1]) {
       ctx.save()
       ctx.scale(sgn, 1)
       ctx.beginPath()
-      if (hang) {
+      if (!noisy) {
         ctx.moveTo(4, -2); ctx.quadraticCurveTo(14, 4, 7, 14); ctx.quadraticCurveTo(2, 8, 2, 2)
       } else {
-        const wy = flap * 16
+        const wy = spread * 16
         ctx.moveTo(3, 0)
-        ctx.quadraticCurveTo(18, -16 - wy, 36, -4 - wy * 1.4)
-        ctx.lineTo(28, 2 - wy * 0.6); ctx.lineTo(22, 6 - wy * 0.3); ctx.lineTo(14, 5); ctx.lineTo(7, 10)
+        ctx.quadraticCurveTo(18, -10 - wy, 34, 0 - wy)
+        ctx.lineTo(27, 6 - wy * 0.5); ctx.lineTo(21, 9); ctx.lineTo(14, 8); ctx.lineTo(7, 12)
       }
       ctx.closePath(); ctx.fill()
       ctx.restore()
@@ -145,10 +185,12 @@ export class Bat extends Critter {
     ctx.fillStyle = '#463957'
     ctx.beginPath(); ctx.moveTo(-6, -12); ctx.lineTo(-5, -20); ctx.lineTo(-1, -14); ctx.fill()
     ctx.beginPath(); ctx.moveTo(6, -12); ctx.lineTo(5, -20); ctx.lineTo(1, -14); ctx.fill()
-    eye(ctx, -2.5, -9, 1.9, false, '#ff5a5a'); eye(ctx, 2.5, -9, 1.9, false, '#ff5a5a')
-    if (!this.alive || this.mode !== 'hang') {
+    eye(ctx, -2.5, -9, 1.9, false, noisy ? '#ffb0b0' : '#ff5a5a'); eye(ctx, 2.5, -9, 1.9, false, noisy ? '#ffb0b0' : '#ff5a5a')
+    if (noisy) { // wide-open screaming mouth
+      ctx.fillStyle = '#12090f'
+      ctx.beginPath(); ctx.ellipse(0, -4.5, 4.2, this.mode === 'shriek' ? 5 : 3, 0, 0, TAU); ctx.fill()
       ctx.fillStyle = '#fff'
-      ctx.fillRect(-2.5, -5, 1.4, 2.4); ctx.fillRect(1.2, -5, 1.4, 2.4)
+      ctx.fillRect(-3, -8.5, 1.4, 2.6); ctx.fillRect(1.6, -8.5, 1.4, 2.6)
     }
   }
 }
