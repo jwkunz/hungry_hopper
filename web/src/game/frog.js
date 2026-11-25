@@ -70,6 +70,8 @@ export class Frog {
     p.v_x = p.v_y = 0
     p.force_x = p.force_y = 0
     p.drag = this.cfg.ground_drag
+    p.drag_y = 0
+    p.g = this.cfg.gravity
     this.dead = false
     this.shield = false
     this.invuln_ms = 0
@@ -83,6 +85,10 @@ export class Frog {
     // SEQ.length = reloading
     this.tongue_step = -1
     this.tongue_timer_ms = 0
+    this.shot_id = 0 // increments on every tongue shot (briars count licks per shot)
+    this.in_water = false
+    this.hidden = false // fully submerged: enemies can't see or hurt the frog
+    this.breath_ms = this.cfg.breath_ms
     this._syncSprites()
   }
 
@@ -128,6 +134,7 @@ export class Frog {
     p.v_x = 0
     p.v_y = -this.cfg.death_hop
     p.force_x = p.force_y = 0
+    p.g = this.cfg.gravity
   }
 
   // input: { left, right, up, down, jump, eat } booleans (held state).
@@ -161,31 +168,59 @@ export class Frog {
     if (input.eat && this.tongue_step < 0) {
       this.tongue_step = 0
       this.tongue_timer_ms = 0
+      this.shot_id += 1
       this.events.push('tongue')
     } else if (this.tongue_step >= 0) {
       this._updateTongue(dt_ms)
     }
 
+    // --- Environment: water, mud ---
+    const cx = this.x + this.w / 2
+    const pond = level.pondAt(cx)
+    const surface = pond ? pond.surface_y : Infinity
+    const wasWater = this.in_water
+    this.in_water = !!pond && this.y + this.h > surface + 2 // feet in the water
+    this.hidden = !!pond && this.y > surface - 4
+    if (this.in_water && !wasWater && Math.abs(p.v_y) > 120) this.events.push('splash')
+    if (this.hidden) {
+      this.breath_ms = Math.max(0, this.breath_ms - dt_ms)
+    } else {
+      this.breath_ms = Math.min(cfg.breath_ms, this.breath_ms + dt_ms * cfg.breath_refill)
+    }
+    const inMud = this.grounded && !this.in_water && level.mudAt(cx)
+
     // --- Horizontal control (planted while the tongue is out on the ground) ---
-    p.drag = this.grounded ? cfg.ground_drag : cfg.air_drag
-    p.drag_y = 0
+    p.g = this.in_water ? cfg.gravity * cfg.water_gravity : cfg.gravity
+    p.drag = this.in_water ? cfg.water_drag_x : this.grounded ? cfg.ground_drag : cfg.air_drag
+    p.drag_y = this.in_water ? cfg.water_drag_y : 0
+    const speed = this.in_water ? cfg.swim_speed : cfg.run_speed * (inMud ? cfg.mud_speed : 1)
     const dirInput = (input.right ? 1 : 0) - (input.left ? 1 : 0)
-    const planted = this.grounded && this.tongueExtending
+    const planted = this.grounded && !this.in_water && this.tongueExtending
     if (planted || dirInput === 0) {
       p.force_x = 0
     } else {
-      p.force_x = dirInput * cfg.run_speed * p.drag // terminal speed = run_speed
+      p.force_x = dirInput * speed * p.drag // terminal speed = speed
       this.is_right = dirInput > 0
     }
 
-    // --- Jump (buffered, with coyote time, variable height) ---
-    if (this.jump_buffer_ms > 0 && this.coyote_ms > 0) {
-      p.v_y = -cfg.jump_speed
-      this.jumping = true
-      this.grounded = false
-      this.jump_buffer_ms = 0
-      this.coyote_ms = 0
-      this.events.push('jump')
+    // --- Jump (buffered, coyote time, variable height) / swim stroke ---
+    if (this.jump_buffer_ms > 0) {
+      if (this.in_water) {
+        // Head above the surface: hop out; otherwise kick upward.
+        const headOut = this.y + this.h * 0.3 < surface
+        p.v_y = headOut ? -cfg.jump_speed * cfg.water_out_jump : -cfg.swim_stroke
+        this.jumping = headOut
+        this.grounded = false
+        this.jump_buffer_ms = 0
+        this.events.push(headOut ? 'jump' : 'bounce')
+      } else if (this.coyote_ms > 0) {
+        p.v_y = -cfg.jump_speed * (inMud ? cfg.mud_jump : 1)
+        this.jumping = true
+        this.grounded = false
+        this.jump_buffer_ms = 0
+        this.coyote_ms = 0
+        this.events.push('jump')
+      }
     }
     if (this.jumping && !input.jump && p.v_y < -cfg.jump_speed * cfg.jump_cut) {
       p.v_y = -cfg.jump_speed * cfg.jump_cut
@@ -197,7 +232,7 @@ export class Frog {
     const prevVy = p.v_y
     p.step(dt)
     const hit = moveAndCollide(p, this.w, this.h, prevX, prevY, level.solids)
-    if (hit.grounded && !this.grounded && prevVy > 350) this.events.push('land')
+    if (hit.grounded && !this.grounded && prevVy > 350 && !this.in_water) this.events.push('land')
     this.grounded = hit.grounded
     if (this.grounded) this.jumping = false
 

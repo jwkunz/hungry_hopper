@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.3.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.4.0** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -18,7 +18,7 @@ version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 **Rules:** eat enemies with the tongue, or land on top of them to stomp. Any
 other contact kills you instantly — unless you hold a **shield** from a glowing
-firefly, which absorbs one hit. Falling into a pit is always fatal. You have 3 lives and respawn at the last
+firefly, which absorbs one hit. Falling into a pit is always fatal. **Ponds** can be swum (JUMP kicks you up; with your head out it hops you onto land) and hide you from enemies — but you only have a few seconds of air. **Briars** kill on touch; lick them away with the tongue (tall thorn walls take three licks and shrink as you go). Mud slows you down; leaves sink a little under your weight. You have 3 lives and respawn at the last
 checkpoint flag; reach the red flag at the end to win. Tap the speaker button (or
 press **M**) to mute. Add `?debug` to the URL to see hitboxes.
 
@@ -81,9 +81,9 @@ web/                     All web content
       config.js          Tunable constants
       engine.js          Game class: fixed-step update, camera, draw
       frog.js            Frog: movement, jump, tongue, shield, death
-      entities.js        Enemies and pickups (Mosquito, Firefly)
+      entities.js        Mosquito, Firefly, Briar
       collision.js       World collision + tongue/stomp/overlap tests
-      level.js           Level 1 data (ground, leaves, puddles)
+      level.js           Level 1 data (ground, ponds, leaves, mud, briars, enemies)
       render.js          Placeholder world art, HUD, debug overlay
       audio.js           Web Audio sfx + music, mute
       storage.js         High-score persistence
@@ -109,6 +109,12 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.4.0
+- Ponds: swimming, hiding underwater, air meter and drowning, bubbles.
+- Briars cut with the tongue (3-lick walls shrink as you cut them); mud slows; leaves dip.
+- Mist and ambient fireflies; nearest-thing-first tongue targeting.
+- Level heights are now relative to the ground; more tests (water, briars, leaves, mud).
 
 ### 2.3.0
 - Title, game-over and level-complete screens; 3 lives; checkpoints; level goal with life bonus.

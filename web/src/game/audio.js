@@ -28,6 +28,8 @@ const SFX = {
   land: { src: thud, volume: 0.45 },
   checkpoint: { src: zoink, volume: 0.8 },
   win: { src: pickup, volume: 1.0 },
+  splash: { src: splat, volume: 0.4 },
+  cut: { src: hit, volume: 0.55 },
 }
 const MUSIC = { title: musicTitle, play: musicPlay }
 const MUSIC_VOLUME = 0.35

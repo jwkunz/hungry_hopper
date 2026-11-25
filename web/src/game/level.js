@@ -1,11 +1,12 @@
 // Level 1 — hand-built for now. Everything is plain data so it can move to a
-// JSON/Tiled format later.
+// JSON/Tiled format later. Heights are written relative to the ground.
 
-export const GROUND_Y = 460 // top surface of the ground
-const GROUND_DEPTH = 200
+export const GROUND_Y = 400 // top surface of the ground
+const GROUND_DEPTH = 300
+const LEAF_THICKNESS = 14
 
 export function createLevel1() {
-  // [x, width] — gaps between segments are pits
+  // [x, width] — gaps between segments are ponds (swimmable) or pits (fatal)
   const segments = [
     [0, 1200],
     [1400, 900],
@@ -14,39 +15,54 @@ export function createLevel1() {
     [4600, 1000],
   ].map(([x, w]) => ({ x, w }))
 
-  // One-way leaf platforms (x, top y, width)
+  // Ponds fill some gaps: 1200-1400 and 3300-3500. (2300-2500 and 4400-4600
+  // are bottomless pits.)
+  const ponds = [
+    [1200, 200],
+    [3300, 200],
+  ].map(([x, w]) => ({ x, w, surface_y: GROUND_Y + 14, floor_y: GROUND_Y + 112 }))
+
+  // One-way leaf platforms: [x, height above ground, width]. They dip a few
+  // pixels when stood on (see Game._updateLeaves).
   const leaves = [
-    [600, 350, 140], [800, 250, 140],
-    [1240, 385, 110],
-    [1700, 350, 160], [1920, 250, 140], [2120, 350, 140],
-    [2370, 385, 110],
-    [2800, 350, 150], [3000, 260, 130], [3200, 350, 140],
-    [3410, 385, 110],
-    [3900, 350, 150], [4120, 250, 140], [4320, 350, 140],
-    [4510, 385, 110],
-  ].map(([x, y, w]) => ({ x, y, w, kind: 'leaf' }))
+    [600, 110, 140], [800, 210, 140],
+    [1240, 75, 110],
+    [1700, 110, 160], [1920, 210, 140], [2120, 110, 140],
+    [2370, 75, 110],
+    [2800, 110, 150], [3000, 200, 130], [3200, 110, 140],
+    [3410, 75, 110],
+    [3900, 110, 150], [4120, 210, 140], [4320, 110, 140],
+    [4510, 75, 110],
+  ].map(([x, above, w]) => ({
+    x, w, y: GROUND_Y - above, y0: GROUND_Y - above, h: LEAF_THICKNESS, dip: 0, oneWay: true, kind: 'leaf',
+  }))
 
-  // Decorative puddles on the ground (submerging comes in a later milestone)
-  const puddles = [
-    [300, 220], [1650, 180], [2900, 200], [4000, 220], [5100, 240],
-  ].map(([x, w]) => ({ x, w }))
+  // Mud patches slow you down: [x, width]
+  const mud = [[820, 170], [2000, 200], [3800, 200]].map(([x, w]) => ({ x, w }))
 
-  // Enemies and pickups: [centre x, centre y, patrol range]
+  // Briars: [centre x, width, height]. Tall walls take three licks and shrink
+  // with each; low patches take one.
+  const briars = [
+    [950, 44, 340], [1750, 120, 56], [2680, 44, 340], [4050, 44, 340], [4900, 120, 56],
+  ].map(([x, w, h]) => ({ x, w, h }))
+
+  // Enemies and pickups: [centre x, height above ground, patrol range]
   const mosquitos = [
-    [700, 330, 140], [1500, 300, 160], [2020, 190, 120], [2750, 340, 160],
-    [3300, 300, 140], [4000, 330, 160], [4700, 320, 150], [5000, 280, 120],
-  ].map(([x, y, range]) => ({ x, y, range }))
-  // Shield fireflies: [centre x, centre y]
+    [700, 130, 140], [1500, 160, 160], [2020, 270, 120], [2750, 120, 160],
+    [3600, 150, 140], [4000, 130, 160], [4700, 140, 150], [5000, 180, 120],
+  ].map(([x, above, range]) => ({ x, y: GROUND_Y - above, range }))
+  // Shield fireflies: [centre x, height above ground]
   const fireflies = [
-    [870, 205], [1990, 195], [3065, 215], [4190, 205],
-  ].map(([x, y]) => ({ x, y }))
+    [870, 255], [1990, 265], [3065, 245], [4190, 255],
+  ].map(([x, above]) => ({ x, y: GROUND_Y - above }))
 
   // Checkpoints (lily-pad flags on the ground): x position
   const checkpoints = [1500, 2600, 3600, 4700].map((x) => ({ x }))
 
   const solids = [
     ...segments.map((s) => ({ x: s.x, y: GROUND_Y, w: s.w, h: GROUND_DEPTH })),
-    ...leaves.map((l) => ({ x: l.x, y: l.y, w: l.w, h: 14, oneWay: true })),
+    ...ponds.map((p) => ({ x: p.x, y: p.floor_y, w: p.w, h: 80 })),
+    ...leaves, // same objects, so a dipping leaf's collision follows its drawing
   ]
 
   const width = 5600
@@ -58,11 +74,15 @@ export function createLevel1() {
     spawn_x: 120,
     goal_x: width - 150,
     segments,
+    ponds,
     leaves,
-    puddles,
+    mud,
+    briars,
     checkpoints,
     mosquitos,
     fireflies,
     solids,
+    pondAt: (cx) => ponds.find((p) => cx > p.x && cx < p.x + p.w) ?? null,
+    mudAt: (cx) => mud.some((m) => cx >= m.x && cx <= m.x + m.w),
   }
 }

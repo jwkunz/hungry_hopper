@@ -6,7 +6,7 @@ const hash = (n) => {
   return x - Math.floor(x)
 }
 
-export function drawBackground(ctx, cam, cfg, level) {
+export function drawBackground(ctx, cam, cfg, level, t = 0) {
   const { view_w: W, view_h: H } = cfg
   const sky = ctx.createLinearGradient(0, 0, 0, H)
   sky.addColorStop(0, '#16302a')
@@ -39,6 +39,34 @@ export function drawBackground(ctx, cam, cfg, level) {
     ctx.ellipse(sx + 2, level.ground_y - h, 5, 14, 0, 0, Math.PI * 2)
     ctx.fill()
   }
+
+  // Drifting mist
+  for (let band = 0; band < 3; band++) {
+    ctx.fillStyle = `rgba(205,232,218,${0.032 + band * 0.008})`
+    const y = level.ground_y - 30 - band * 55
+    const span = W + 500
+    for (let i = 0; i < 6; i++) {
+      const x = ((((i * 230 + t * (0.012 + band * 0.006) - cam * (0.3 + band * 0.12)) % span) + span) % span) - 250
+      ctx.beginPath()
+      ctx.ellipse(x, y + Math.sin(t / 2000 + i) * 6, 190, 20 + band * 6, 0, 0, Math.PI * 2)
+      ctx.fill()
+    }
+  }
+
+  // Ambient fireflies (decoration only; the shield ones are bigger and real)
+  for (let i = 0; i < 16; i++) {
+    const blink = Math.sin(t / 600 + i * 2.3)
+    if (blink < 0) continue
+    const x = ((((hash(i) * (W + 300)) - cam * 0.7 - t * 0.01) % (W + 300)) + (W + 300)) % (W + 300) - 150
+    const y = level.ground_y - 50 - hash(i + 3) * 230 + Math.sin(t / 900 + i) * 10
+    const g = ctx.createRadialGradient(x, y, 0, x, y, 9)
+    g.addColorStop(0, `rgba(235,255,170,${0.7 * blink})`)
+    g.addColorStop(1, 'rgba(235,255,170,0)')
+    ctx.fillStyle = g
+    ctx.beginPath()
+    ctx.arc(x, y, 9, 0, Math.PI * 2)
+    ctx.fill()
+  }
 }
 
 export function drawWorld(ctx, level, cam, cfg, activeCheckpoint = -1) {
@@ -56,16 +84,27 @@ export function drawWorld(ctx, level, cam, cfg, activeCheckpoint = -1) {
     ctx.fillRect(s.x, level.ground_y, s.w, 4)
   }
 
-  // Puddles (decorative)
-  for (const p of level.puddles) {
+  // Pond basins (the water itself is drawn over everything in drawWater)
+  for (const p of level.ponds) {
     if (p.x > right || p.x + p.w < left) continue
-    ctx.fillStyle = '#2b6a86'
+    ctx.fillStyle = '#21170e'
+    ctx.fillRect(p.x, level.ground_y, p.w, cfg.view_h - level.ground_y)
+    ctx.fillStyle = '#4a3a22'
+    ctx.fillRect(p.x, p.floor_y, p.w, 8)
+    ctx.fillStyle = '#5b4a2c'
+    for (let x = p.x + 14; x < p.x + p.w - 8; x += 38) ctx.fillRect(x, p.floor_y - 3, 12, 5) // pebbles
+  }
+
+  // Mud patches
+  for (const m of level.mud) {
+    if (m.x > right || m.x + m.w < left) continue
+    ctx.fillStyle = '#2b1d10'
     ctx.beginPath()
-    ctx.ellipse(p.x + p.w / 2, level.ground_y + 4, p.w / 2, 7, 0, 0, Math.PI * 2)
+    ctx.ellipse(m.x + m.w / 2, level.ground_y + 4, m.w / 2, 8, 0, 0, Math.PI * 2)
     ctx.fill()
-    ctx.fillStyle = 'rgba(255,255,255,0.18)'
+    ctx.fillStyle = 'rgba(255,255,255,0.12)'
     ctx.beginPath()
-    ctx.ellipse(p.x + p.w / 2 - p.w * 0.12, level.ground_y + 2, p.w * 0.18, 2, 0, 0, Math.PI * 2)
+    ctx.ellipse(m.x + m.w / 2 - m.w * 0.15, level.ground_y + 2, m.w * 0.2, 2, 0, 0, Math.PI * 2)
     ctx.fill()
   }
 
@@ -127,6 +166,17 @@ export function drawHud(ctx, game) {
   ctx.strokeText(lv, 16, 32)
   ctx.fillStyle = '#ff7a8a'
   ctx.fillText(lv, 16, 32)
+  const frac = game.frog.breath_ms / cfg.breath_ms
+  if (frac < 0.999) {
+    ctx.fillStyle = 'rgba(0,0,0,.55)'
+    ctx.fillRect(16, 42, 112, 14)
+    ctx.fillStyle = frac > 0.5 ? '#6fd3f2' : frac > 0.25 ? '#ffd24a' : '#ff5a5a'
+    ctx.fillRect(18, 44, 108 * frac, 10)
+    ctx.font = 'bold 11px system-ui, sans-serif'
+    ctx.fillStyle = '#fff'
+    ctx.fillText('AIR', 134, 54)
+    ctx.font = 'bold 22px system-ui, sans-serif'
+  }
   ctx.fillStyle = '#fff'
   ctx.textAlign = 'right'
   const txt = `SCORE ${String(game.score).padStart(6, '0')}`
@@ -211,4 +261,35 @@ export function drawScreen(ctx, game) {
       break
   }
   ctx.restore()
+}
+
+// Translucent water over the ponds (drawn after the frog so it looks submerged)
+export function drawWater(ctx, level, cam, cfg, t, particles = []) {
+  for (const p of level.ponds) {
+    if (p.x > cam + cfg.view_w + 50 || p.x + p.w < cam - 50) continue
+    const h = p.floor_y - p.surface_y
+    const g = ctx.createLinearGradient(0, p.surface_y, 0, p.floor_y)
+    g.addColorStop(0, 'rgba(60,140,170,0.50)')
+    g.addColorStop(1, 'rgba(20,70,100,0.72)')
+    ctx.fillStyle = g
+    ctx.fillRect(p.x, p.surface_y, p.w, h)
+    ctx.strokeStyle = 'rgba(200,235,245,0.85)'
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    for (let x = 0; x <= p.w; x += 8) {
+      const y = p.surface_y + Math.sin((x + t / 6) / 11) * 1.8
+      if (x === 0) ctx.moveTo(p.x + x, y)
+      else ctx.lineTo(p.x + x, y)
+    }
+    ctx.stroke()
+  }
+  ctx.strokeStyle = 'rgba(220,245,255,0.8)'
+  ctx.lineWidth = 1.5
+  for (const b of particles) {
+    ctx.globalAlpha = Math.max(0, 1 - b.age / 1200)
+    ctx.beginPath()
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2)
+    ctx.stroke()
+  }
+  ctx.globalAlpha = 1
 }

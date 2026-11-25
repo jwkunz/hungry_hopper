@@ -83,11 +83,14 @@ keyboard and touch buttons both just set flags on it.
 - [x] Game-flow unit tests (title, lives, checkpoints, goal, shield)
 - [ ] Pause button (still to do)
 
-### M4 — Environment
-- [ ] Water puddles: submerge to hide (breath meter); swimming sections
-- [ ] Leaves that dip when stood on; mud that slows
-- [ ] **Briars**: lethal to touch; tongue them away (several licks)
-- [ ] Parallax background, mist, fireflies
+### M4 — Environment *(2.4.0)*
+- [x] **Ponds**: swim (jump = kick up; head out of water = hop out), hidden from enemies when fully submerged, 7 s of air then you drown; air bar HUD, bubbles
+- [x] Leaves dip a few pixels under the frog and spring back
+- [x] Mud patches slow walking and shave the jump
+- [x] **Briars**: lethal on touch (a shield absorbs it); the tongue cuts them — low patches take 1 lick, tall walls take 3 and shrink each time (hoppable after the second)
+- [x] Tongue now hits the nearest thing first, so a briar shields what is behind it
+- [x] Parallax, drifting mist, ambient fireflies; level now written in heights above the ground
+- [ ] Sinking lily pads / tide timers (stretch)
 
 ### M5 — Bestiary
 Mole (pops from ground) · bat (swoops, hangs) · centipede (walls/ceilings) ·

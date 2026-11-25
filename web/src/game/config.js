@@ -29,6 +29,23 @@ export const CONFIG = {
 
   tongue_thickness: 16, // hit-test thickness of the tongue
 
+  // Water
+  water_gravity: 0.18, // fraction of normal gravity while swimming
+  water_drag_x: 5,
+  water_drag_y: 4, // also caps the sinking speed
+  swim_speed: 150,
+  swim_stroke: 340, // upward kick per jump press while swimming
+  water_out_jump: 0.85, // hop-out jump strength when your head is above water
+  breath_ms: 7000, // how long you can stay submerged
+  breath_refill: 3, // refill speed multiplier at the surface
+
+  // Mud and leaves
+  mud_speed: 0.5, // walking speed multiplier in mud
+  mud_jump: 0.9,
+  leaf_dip: 9, // how far a leaf sinks under your weight (px)
+  leaf_dip_down: 70, // px/s
+  leaf_dip_up: 45,
+
   // Combat
   stomp_bounce: 430, // upward speed after stomping an enemy
   stomp_bounce_high: 620, // ...while holding jump
@@ -41,6 +58,7 @@ export const CONFIG = {
   points_eat: 200,
   points_stomp: 100,
   points_pickup: 50,
+  points_briar: 25,
   active_margin: 500, // enemies only move within this distance of the screen
 
   // Camera

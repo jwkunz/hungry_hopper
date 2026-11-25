@@ -2,7 +2,7 @@ import { CONFIG, frogHitbox } from './config.js'
 import { Frog } from './frog.js'
 import { createLevel1 } from './level.js'
 import { spawnEntities } from './entities.js'
-import { drawBackground, drawWorld, drawHud, drawDebug, drawScreen } from './render.js'
+import { drawBackground, drawWorld, drawWater, drawHud, drawDebug, drawScreen } from './render.js'
 import { rectsOverlap, segmentHitsRect, isStomp } from './collision.js'
 import { loadHighScore, saveHighScore } from './storage.js'
 
@@ -36,6 +36,8 @@ export class Game {
     this.high_score = loadHighScore()
     this.new_high = false
     this.popups = []
+    this.particles = [] // water bubbles
+    this.bubble_ms = 0
     this.elapsed_ms = 0
     this.accumulator = 0
     this.prevJump = false
@@ -130,6 +132,8 @@ export class Game {
     const hb = frogHitbox(this.cfg)
     const x = this.checkpoint >= 0 ? this.level.checkpoints[this.checkpoint].x : this.level.spawn_x
     this.frog.respawn(x, this.level.ground_y - hb.h - 1)
+    this.particles = []
+    for (const l of this.level.leaves) { l.dip = 0; l.y = l.y0 }
     this.entities = spawnEntities(this.level).filter((e) => this.checkpoint < 0 || e.cx > x)
     this._snapCamera()
   }
@@ -165,6 +169,8 @@ export class Game {
     const { cfg, frog, level } = this
     this.elapsed_ms += dt_ms
     this._updatePopups(dt_ms)
+    this._updateLeaves(dt_ms)
+    this._updateParticles(dt_ms)
 
     switch (this.state) {
       case GameState.TITLE:
@@ -196,16 +202,34 @@ export class Game {
     this._drainFrogEvents(true)
     this._updateEntities(dt_ms)
 
-    // Tongue: eat enemies, grab pickups
+    // Air: stay under too long and you drown
+    if (frog.hidden) this._bubbles(dt_ms)
+    if (frog.breath_ms <= 0) {
+      this._popup(frog.x + frog.w / 2, frog.y - 10, 'OUT OF AIR!')
+      return this._die()
+    }
+
+    // Tongue: eat enemies, cut briars, grab pickups (nearest thing wins)
     const seg = frog.tongueSegment()
     if (seg) {
+      let best = null
+      let bestD = Infinity
       for (const e of this.entities) {
-        if (!e.alive || !e.edible) continue
-        if (segmentHitsRect(seg.x1, seg.y1, seg.x2, seg.y2, e.hitbox, cfg.tongue_thickness / 2)) {
-          this._eat(e)
-          frog.retractTongue()
-          break
+        if (!e.alive || !(e.edible || e.lickable)) continue
+        if (!segmentHitsRect(seg.x1, seg.y1, seg.x2, seg.y2, e.hitbox, cfg.tongue_thickness / 2)) continue
+        const d = Math.abs(e.cx - seg.x1)
+        if (d < bestD) { best = e; bestD = d }
+      }
+      if (best) {
+        if (best.lickable) {
+          if (best.lick(frog.shot_id)) {
+            this._emit('cut')
+            if (!best.alive) this._addScore(cfg.points_briar, best.cx, best.ground_y - 30)
+          }
+        } else {
+          this._eat(best)
         }
+        frog.retractTongue()
       }
     }
 
@@ -213,6 +237,7 @@ export class Game {
     const fb = frog.hitbox
     for (const e of this.entities) {
       if (!e.alive || !rectsOverlap(fb, e.hitbox)) continue
+      if (e.kind !== 'pickup' && frog.hidden) continue // hiding underwater
       if (e.kind === 'pickup') {
         this._collect(e)
       } else if (e.stompable && isStomp(prevBottom, prevVy, e.hitbox)) {
@@ -235,6 +260,44 @@ export class Game {
     if (cx > level.goal_x) return this._complete()
 
     if (frog.y > level.height + 120) this._die()
+  }
+
+  // Leaves sink a little under the frog's weight and spring back up.
+  _updateLeaves(dt_ms) {
+    const { cfg, frog, level } = this
+    const dt = dt_ms / 1000
+    for (const l of level.leaves) {
+      const standing =
+        !frog.dead && frog.grounded && frog.x + frog.w > l.x && frog.x < l.x + l.w &&
+        Math.abs(frog.y + frog.h - l.y) < 3
+      const target = standing ? cfg.leaf_dip : 0
+      const speed = (standing ? cfg.leaf_dip_down : cfg.leaf_dip_up) * dt
+      const before = l.dip
+      l.dip += Math.max(-speed, Math.min(speed, target - l.dip))
+      l.y = l.y0 + l.dip
+      if (standing) frog.physics.p_y += l.dip - before // ride the leaf down
+    }
+  }
+
+  _bubbles(dt_ms) {
+    this.bubble_ms -= dt_ms
+    if (this.bubble_ms > 0) return
+    this.bubble_ms = 260 + Math.random() * 200
+    const f = this.frog
+    this.particles.push({
+      x: f.x + f.w / 2 + (Math.random() - 0.5) * 30,
+      y: f.y + 4,
+      r: 2 + Math.random() * 3,
+      age: 0,
+    })
+  }
+
+  _updateParticles(dt_ms) {
+    for (const p of this.particles) {
+      p.age += dt_ms
+      p.y -= 45 * (dt_ms / 1000)
+    }
+    this.particles = this.particles.filter((p) => p.age < 1200)
   }
 
   // Only entities near the screen move
@@ -330,14 +393,15 @@ export class Game {
     const cam = Math.round(this.camera_x)
     ctx.fillStyle = cfg.background
     ctx.fillRect(0, 0, cfg.view_w, cfg.view_h)
-    drawBackground(ctx, cam, cfg, level)
+    drawBackground(ctx, cam, cfg, level, this.elapsed_ms)
     ctx.save()
     ctx.translate(-cam, 0)
-    drawWorld(ctx, level, cam, cfg, this.checkpoint)
+    drawWorld(ctx, level, cam, cfg, this.checkpoint, this.elapsed_ms)
     for (const e of this.entities) {
       if (e.cx > cam - 200 && e.cx < cam + cfg.view_w + 200) e.draw(ctx)
     }
     this.frog.draw(ctx)
+    drawWater(ctx, level, cam, cfg, this.elapsed_ms, this.particles)
     for (const p of this.popups) this._drawPopup(ctx, p)
     if (this.debug) drawDebug(ctx, this)
     ctx.restore()

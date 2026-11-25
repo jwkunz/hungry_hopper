@@ -108,8 +108,91 @@ export class Firefly extends Entity {
   }
 }
 
+const hash = (n) => {
+  const x = Math.sin(n * 127.1 + 311.7) * 43758.5453
+  return x - Math.floor(x)
+}
+
+// Thorny vines. Lethal to touch, can't be stomped or eaten, but the tongue
+// cuts them: each tongue shot is one lick. A tall wall (3 licks) shrinks as it
+// is cut, so after two licks you can hop over what is left.
+export class Briar extends Entity {
+  constructor(x, ground_y, w, h) {
+    super(x, ground_y - h / 2, w, h)
+    this.ground_y = ground_y
+    this.base_h = h
+    this.max_hp = h > 150 ? 3 : 1
+    this.hp = this.max_hp
+    this.kind = 'hazard'
+    this.edible = false
+    this.lickable = true
+    this.last_shot = -1
+    this.hurt_ms = 0
+    this.t = (x * 5) % 1000
+  }
+
+  // One tongue shot. Returns true if it counted.
+  lick(shot) {
+    if (!this.alive || shot === this.last_shot) return false
+    this.last_shot = shot
+    this.hp -= 1
+    this.hurt_ms = 250
+    this.h = this.base_h * Math.max(0, this.hp / this.max_hp)
+    this.cy = this.ground_y - this.h / 2
+    if (this.hp <= 0) this.die()
+    return true
+  }
+
+  update(dt_ms) {
+    this.t += dt_ms
+    this.hurt_ms = Math.max(0, this.hurt_ms - dt_ms)
+    if (!this.alive) {
+      this.death_ms += dt_ms
+      if (this.death_ms > 450) this.gone = true
+    }
+  }
+
+  draw(ctx) {
+    const fade = this.alive ? 1 : Math.max(0, 1 - this.death_ms / 450)
+    const full = this.alive ? this.h : this.base_h / this.max_hp * 0.6 * fade
+    if (full < 2) return
+    const n = Math.max(2, Math.round(this.w / 13))
+    const left = this.cx - this.w / 2
+    ctx.save()
+    ctx.globalAlpha = fade
+    ctx.lineCap = 'round'
+    for (let i = 0; i < n; i++) {
+      const x0 = left + ((i + 0.5) * this.w) / n + (hash(i) - 0.5) * 5
+      const shake = this.hurt_ms > 0 ? (Math.random() - 0.5) * 6 : 0
+      const sway = Math.sin(this.t / 500 + i * 1.7) * 4 + shake
+      const top = full * (0.72 + 0.28 * hash(i + 9))
+      const y0 = this.ground_y
+      ctx.strokeStyle = i % 2 ? '#34431f' : '#4b5e28'
+      ctx.lineWidth = 4
+      ctx.beginPath()
+      ctx.moveTo(x0, y0)
+      ctx.quadraticCurveTo(x0 + sway * 1.6 + (hash(i + 4) - 0.5) * 18, y0 - top * 0.55, x0 + sway, y0 - top)
+      ctx.stroke()
+      // thorns
+      ctx.strokeStyle = '#8a6a43'
+      ctx.lineWidth = 2
+      ctx.beginPath()
+      for (let y = 18; y < top; y += 22) {
+        const f = y / top
+        const px = x0 + sway * f * f
+        const side = (Math.floor(y / 22) + i) % 2 ? 1 : -1
+        ctx.moveTo(px, y0 - y)
+        ctx.lineTo(px + side * 9, y0 - y - 7)
+      }
+      ctx.stroke()
+    }
+    ctx.restore()
+  }
+}
+
 export function spawnEntities(level) {
   return [
+    ...level.briars.map((b) => new Briar(b.x, level.ground_y, b.w, b.h)),
     ...level.mosquitos.map((m) => new Mosquito(m.x, m.y, m.range)),
     ...level.fireflies.map((f) => new Firefly(f.x, f.y)),
   ]
