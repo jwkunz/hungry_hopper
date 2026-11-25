@@ -91,6 +91,7 @@ keyboard and touch buttons both just set flags on it.
 - [x] Tongue now hits the nearest thing first, so a briar shields what is behind it
 - [x] Parallax, drifting mist, ambient fireflies; level now written in heights above the ground
 - [x] Tuning pass (2.4.1): wide tongue aim (+60°/−35°), enemies are reeled in and swallowed
+- [x] Walk animation via code (squash & bob; the sprite sheet has no walk frames — real walk/hop frames would be a future art upgrade)
 - [ ] Sinking lily pads / tide timers (stretch)
 
 ### M5 — Bestiary

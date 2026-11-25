@@ -85,6 +85,9 @@ export class Frog {
     // SEQ.length = reloading
     this.tongue_step = -1
     this.tongue_timer_ms = 0
+    this.walk_phase = 0 // advances with distance walked
+    this.walk_k = 0 // 0..1 how much the walk bounce is applied
+    this.anim_ms = 0
     this.shot_id = 0 // increments on every tongue shot (briars count licks per shot)
     this.in_water = false
     this.hidden = false // fully submerged: enemies can't see or hurt the frog
@@ -252,6 +255,13 @@ export class Frog {
     this.grounded = hit.grounded
     if (this.grounded) this.jumping = false
 
+    // Walk-cycle bookkeeping: the bounce advances with distance covered
+    this.anim_ms += dt_ms
+    const walking = this.grounded && !this.in_water && !this.tongueExtending
+    const moveFrac = walking ? Math.min(1, Math.abs(p.v_x) / cfg.run_speed) : 0
+    this.walk_k += (moveFrac - this.walk_k) * Math.min(1, dt * 14)
+    if (walking) this.walk_phase += (Math.abs(p.v_x) * dt / cfg.walk_stride_px) * Math.PI * 2
+
     // Level edges
     if (p.p_x < 0) { p.p_x = 0; p.v_x = Math.max(0, p.v_x) }
     const maxX = level.width - this.w
@@ -294,11 +304,27 @@ export class Frog {
     }
     this.tongue.state = `${dir} ${this.dead ? 0 : this.tongueFrame}`
 
+    // Squash & bob while walking (rest pose only), a little breathing at idle.
+    // Purely visual: the hitbox never changes.
+    const cfg = this.cfg
+    let sx = 1
+    let sy = 1
+    let lift = 0
+    if (this.grounded && !this.dead && !this.in_water && !this.tongueExtending) {
+      const hop = Math.abs(Math.sin(this.walk_phase / 2)) // 0 at contact, 1 at the top
+      const k = this.walk_k
+      sy = 1 + k * cfg.walk_squash * (2 * hop - 1) + (1 - k) * cfg.breathe_squash * Math.sin(this.anim_ms / 420)
+      sx = 1 - (sy - 1) * 0.8 // keep the volume roughly constant
+      lift = -k * cfg.walk_bob_px * hop
+    }
+    this.body.sx = sx
+    this.body.sy = sy
+
     // Body sprite: bottom-center aligned to the hitbox, whatever the pose.
     const m = this.body.mask()
     const s = this.scale
-    this.body.p_x = this.x + this.w / 2 - (m.s_width * s) / 2
-    this.body.p_y = this.y + this.h - m.s_height * s
+    this.body.p_x = this.x + this.w / 2 - (m.s_width * s * sx) / 2
+    this.body.p_y = this.y + this.h - m.s_height * s * sy + lift
     this._placeTongue()
   }
 

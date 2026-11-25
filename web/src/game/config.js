@@ -20,6 +20,12 @@ export const CONFIG = {
   coyote_ms: 90, // can still jump this long after leaving a ledge
   jump_buffer_ms: 110, // jump pressed this early before landing still counts
 
+  // Walk animation (squash & bob)
+  walk_stride_px: 70, // distance per full bounce
+  walk_bob_px: 3, // how high the body lifts at the top of a bounce
+  walk_squash: 0.06, // vertical squash/stretch amount
+  breathe_squash: 0.012, // idle breathing
+
   // Tongue
   frog_tongue_action_ms: 25,
   frog_tongue_reload_ms: 500,

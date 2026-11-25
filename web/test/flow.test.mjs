@@ -162,3 +162,26 @@ test('an eaten mosquito is reeled in on the tongue, shrinks, is swallowed, and s
   assert.ok(events.indexOf('grab') !== -1 && events.indexOf('eat') > events.indexOf('grab'), 'grab then gulp')
   assert.ok(m.cx < startX, 'was pulled toward the frog')
 })
+
+test('walking squashes and bobs the body sprite; standing, airborne and hitbox are unaffected', () => {
+  const g = mk()
+  start(g)
+  g.entities = []
+  run(g, 400)
+  const f = g.frog
+  const w0 = f.w, h0 = f.h
+  assert.ok(Math.abs(f.body.sy - 1) <= CONFIG.breathe_squash + 1e-9, 'idle: only a hint of breathing')
+  let lo = 9, hi = 0, maxLift = 0
+  for (let t = 0; t < 1200; t += 16) {
+    g.update(16, { ...none, right: true })
+    lo = Math.min(lo, f.body.sy); hi = Math.max(hi, f.body.sy)
+    maxLift = Math.max(maxLift, f.y + f.h - (f.body.p_y + f.body.mask().s_height * f.scale * f.body.sy))
+  }
+  assert.ok(lo < 0.96 && hi > 1.04, `squash range ${lo.toFixed(3)}..${hi.toFixed(3)}`)
+  assert.ok(maxLift > 1.5, `bob lifts the body (${maxLift.toFixed(1)}px)`)
+  assert.equal(f.w, w0); assert.equal(f.h, h0)
+  // in the air: no squash
+  g.update(16, { ...none, jump: true }); run(g, 100, { ...none, jump: true })
+  assert.ok(!f.grounded)
+  assert.equal(f.body.sy, 1)
+})

@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.4.1** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.4.2** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -109,6 +109,9 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.4.2
+- Walk animation: the frog squashes and bobs in time with the distance it walks (faster = bigger bounce), and breathes a little when idle. Purely visual — the hitbox doesn't change. The frog sheet has no walk frames, so this is done in code (see `walk_*` in `config.js`).
 
 ### 2.4.1
 - Tongue aim range widened: up to 60° above and 35° below horizontal (faster sweep), so you can reach bugs overhead.
