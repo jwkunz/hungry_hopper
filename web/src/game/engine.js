@@ -201,6 +201,7 @@ export class Game {
     frog.update(dt_ms, input, level)
     this._drainFrogEvents(true)
     this._updateEntities(dt_ms)
+    this._updateEaten()
 
     // Air: stay under too long and you drown
     if (frog.hidden) this._bubbles(dt_ms)
@@ -317,11 +318,39 @@ export class Game {
     ev.length = 0
   }
 
+  // Tongue grabbed something edible: it rides the tongue in, then is swallowed
+  // (see _updateEaten). Points are awarded on the grab.
   _eat(e) {
+    if (e.kind === 'pickup') return this._collect(e, true)
     e.die()
-    if (e.kind === 'pickup') return this._collect(e)
-    this._emit('eat')
+    e.eaten = true
+    this._emit('grab')
     this._addScore(this.cfg.points_eat, e.cx, e.cy)
+  }
+
+  _updateEaten() {
+    const { frog, cfg } = this
+    for (const e of this.entities) {
+      if (!e.eaten || e.gone) continue
+      if (frog.tongueFrame > 0 && !frog.dead) {
+        // Stuck to the tip, being reeled in
+        const tip = frog.tongueTip()
+        e.cx += (tip.x - e.cx) * 0.4
+        e.cy += (tip.y - e.cy) * 0.4
+        e.swallow_ms = 0
+      } else {
+        // Tongue is home: into the mouth and gone
+        e.swallow_ms += cfg.step_ms
+        e.cx += (frog.mouth.x - e.cx) * 0.35
+        e.cy += (frog.mouth.y + 6 - e.cy) * 0.35
+        e.scale_mul = Math.max(0, 1 - e.swallow_ms / cfg.swallow_ms)
+        if (e.swallow_ms >= cfg.swallow_ms) {
+          e.gone = true
+          this._emit('eat') // gulp
+        }
+      }
+    }
+    this.entities = this.entities.filter((e) => !e.gone)
   }
 
   _stomp(e) {
@@ -331,8 +360,9 @@ export class Game {
     this._addScore(this.cfg.points_stomp, e.cx, e.cy)
   }
 
-  _collect(e) {
+  _collect(e, viaTongue = false) {
     e.die()
+    if (viaTongue) { e.eaten = true; e.swallow_ms = 0 }
     this.frog.shield = true
     this._emit('pickup')
     this._addScore(this.cfg.points_pickup, e.cx, e.cy, 'SHIELD!')

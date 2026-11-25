@@ -100,3 +100,65 @@ test('a shield absorbs one hit; the second hit is fatal', () => {
   park(); run(g, 50)
   assert.equal(g.state, GameState.DYING)
 })
+
+// ---- tongue aiming + being eaten ----
+import { Frog } from '../src/game/frog.js'
+
+test('tongue can aim steeply: limits are respected and the hit line follows the angle', () => {
+  assert.ok(CONFIG.frog_tongue_angle_limit_up_deg >= 55)
+  assert.ok(CONFIG.frog_tongue_angle_limit_down_deg >= 30)
+  const lv = createLevel1()
+  for (const right of [true, false]) {
+    for (const deg of [-CONFIG.frog_tongue_angle_limit_up_deg, 0, CONFIG.frog_tongue_angle_limit_down_deg]) {
+      const f = new Frog(CONFIG, 300, lv.ground_y - 60)
+      f.is_right = right
+      f.tongue_angle_deg = deg
+      f.tongue_step = 5 // fully extended
+      f._syncSprites()
+      const seg = f.tongueSegment()
+      const dx = (seg.x2 - seg.x1) * (right ? 1 : -1)
+      const dy = seg.y2 - seg.y1
+      const got = (Math.atan2(dy, dx) * 180) / Math.PI
+      assert.ok(Math.abs(got - deg) < 1, `${right ? 'right' : 'left'} ${deg}°: got ${got.toFixed(1)}°`)
+      assert.ok(Math.hypot(dx, dy) > 150, 'full-length tongue')
+    }
+  }
+})
+
+test('holding up/down sweeps the aim to the limits', () => {
+  const g = mk()
+  start(g)
+  g.entities = []
+  run(g, 300)
+  run(g, 1500, { ...none, up: true })
+  assert.equal(g.frog.tongue_angle_deg, -CONFIG.frog_tongue_angle_limit_up_deg)
+  run(g, 2500, { ...none, down: true })
+  assert.equal(g.frog.tongue_angle_deg, CONFIG.frog_tongue_angle_limit_down_deg)
+})
+
+test('an eaten mosquito is reeled in on the tongue, shrinks, is swallowed, and scores', () => {
+  const g = mk()
+  start(g)
+  const m = g.entities.find((e) => e.kind === 'enemy')
+  g.entities = [m]
+  const f = g.frog
+  f.is_right = true
+  run(g, 100)
+  Object.assign(m, { cx: f.mouth.x + 120, cy: f.mouth.y + 6, home_x: f.mouth.x + 120, home_y: f.mouth.y + 6, range: 0, speed: 0 })
+  events.length = 0
+  const startX = m.cx
+  let sawEaten = false
+  let minScale = 1
+  g.update(16, { ...none, eat: true })
+  for (let t = 0; t < 900 && !m.gone; t += 16) {
+    g.update(16, none)
+    if (m.eaten) sawEaten = true
+    minScale = Math.min(minScale, m.scale_mul)
+  }
+  assert.ok(sawEaten, 'was grabbed')
+  assert.ok(m.gone, 'swallowed')
+  assert.ok(minScale < 0.6, 'shrank while being swallowed')
+  assert.equal(g.score, CONFIG.points_eat)
+  assert.ok(events.indexOf('grab') !== -1 && events.indexOf('eat') > events.indexOf('grab'), 'grab then gulp')
+  assert.ok(m.cx < startX, 'was pulled toward the frog')
+})

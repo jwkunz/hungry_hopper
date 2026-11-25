@@ -11,6 +11,9 @@ class Entity {
     this.alive = true // collides / can be hit
     this.gone = false // finished dying; remove from the world
     this.death_ms = 0
+    this.eaten = false // being pulled in by the tongue (engine drives position)
+    this.swallow_ms = 0
+    this.scale_mul = 1 // shrinks to 0 as it is swallowed
     this.kind = 'enemy' // 'enemy' | 'pickup'
     this.edible = true // tongue can grab it
     this.stompable = false
@@ -41,6 +44,7 @@ export class Mosquito extends Entity {
 
   update(dt_ms) {
     this.t += dt_ms
+    if (this.eaten) return // the engine moves it along with the tongue
     if (!this.alive) {
       this.death_ms += dt_ms
       this.cy += (dt_ms / 1000) * (200 + this.death_ms * 0.5) // tumble down
@@ -54,7 +58,9 @@ export class Mosquito extends Entity {
   }
 
   draw(ctx) {
+    if (this.scale_mul < 0.03) return
     const s = this.sprite
+    s.scale = 0.5 * this.scale_mul
     s.state = `flap ${MQ_ANIM[Math.floor(this.t / 70) % MQ_ANIM.length]}`
     s.flip = this.dir < 0
     s.alpha = this.alive ? 1 : Math.max(0, 1 - this.death_ms / 700)
@@ -87,12 +93,14 @@ export class Firefly extends Entity {
   }
   update(dt_ms) {
     this.t += dt_ms
+    if (this.eaten) return
     if (!this.alive) { this.gone = true; return }
     this.cy = this.base_y + Math.sin(this.t / 300) * 8
   }
   draw(ctx) {
+    if (this.scale_mul < 0.03) return
     const pulse = 0.75 + 0.25 * Math.sin(this.t / 160)
-    const r = 26 * pulse
+    const r = 26 * pulse * this.scale_mul
     const g = ctx.createRadialGradient(this.cx, this.cy, 1, this.cx, this.cy, r)
     g.addColorStop(0, 'rgba(255,250,170,0.95)')
     g.addColorStop(0.35, 'rgba(255,230,90,0.45)')

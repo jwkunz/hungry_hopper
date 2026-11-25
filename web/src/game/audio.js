@@ -30,6 +30,7 @@ const SFX = {
   win: { src: pickup, volume: 1.0 },
   splash: { src: splat, volume: 0.4 },
   cut: { src: hit, volume: 0.55 },
+  grab: { src: zoink, volume: 0.6 },
 }
 const MUSIC = { title: musicTitle, play: musicPlay }
 const MUSIC_VOLUME = 0.35

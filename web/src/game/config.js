@@ -23,9 +23,9 @@ export const CONFIG = {
   // Tongue
   frog_tongue_action_ms: 25,
   frog_tongue_reload_ms: 500,
-  frog_tongue_aim_deg_per_s: 60,
-  frog_tongue_angle_limit_up_deg: 13,
-  frog_tongue_angle_limit_down_deg: 4,
+  frog_tongue_aim_deg_per_s: 90,
+  frog_tongue_angle_limit_up_deg: 60, // aims up to this far above horizontal
+  frog_tongue_angle_limit_down_deg: 35, // ...and this far below
 
   tongue_thickness: 16, // hit-test thickness of the tongue
 
@@ -55,6 +55,7 @@ export const CONFIG = {
   start_lives: 3,
   points_life_bonus: 500, // per remaining life when the level is cleared
   screen_min_ms: 600, // ignore start taps this soon after a screen appears
+  swallow_ms: 170, // how long a tongued enemy takes to be pulled in and swallowed
   points_eat: 200,
   points_stomp: 100,
   points_pickup: 50,

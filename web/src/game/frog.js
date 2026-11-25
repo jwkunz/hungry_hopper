@@ -105,16 +105,32 @@ export class Frog {
     return this.tongueExtending ? TONGUE_SEQUENCE[this.tongue_step] : 0
   }
 
-  // The tongue as a line segment (for hit tests), or null when tucked away.
+  // The tongue's centre line as a segment from the mouth (x1,y1) to the tip
+  // (x2,y2), for hit tests. Derived from the sprite's own transform, so it
+  // always matches what is drawn, at any aim angle. Null when tucked away.
   tongueSegment() {
-    const f = this.tongueFrame
-    if (f === 0) return null
-    const len = this.tongue.mask().s_width * this.scale
-    const th = (this.tongue_angle_deg * Math.PI) / 180
-    const dx = (this.is_right ? 1 : -1) * Math.cos(th)
-    const dy = Math.sin(th)
-    const y0 = this.mouth.y + 6 // roughly the tongue's centre line
-    return { x1: this.mouth.x, y1: y0, x2: this.mouth.x + dx * len, y2: y0 + dy * len }
+    if (this.tongueFrame === 0) return null
+    const m = this.tongue.mask()
+    const len = m.s_width * this.scale
+    const hc = (m.s_height * this.scale) / 2
+    const rot = this.tongue.rotation
+    const c = Math.cos(rot)
+    const sn = Math.sin(rot)
+    const at = (lx, ly) => ({
+      x: this.tongue.p_x + lx * c - ly * sn,
+      y: this.tongue.p_y + lx * sn + ly * c,
+    })
+    const a = at(0, hc)
+    const b = at(len, hc)
+    // Right-facing: the root is the sprite's left end. Left-facing: its right end.
+    const [root, tip] = this.is_right ? [a, b] : [b, a]
+    return { x1: root.x, y1: root.y, x2: tip.x, y2: tip.y }
+  }
+
+  // Where a captured bug rides: the tongue tip, or the mouth when tucked.
+  tongueTip() {
+    const seg = this.tongueSegment()
+    return seg ? { x: seg.x2, y: seg.y2 } : { x: this.mouth.x, y: this.mouth.y + 6 }
   }
 
   // The tongue hit something: pull it back in instead of finishing the reach.
