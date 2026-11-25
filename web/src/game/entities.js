@@ -1,5 +1,5 @@
 import { Sprite, SpriteMask } from './sprite.js'
-import mosquitoAtlas from '../assets/sprites/creatures/mosquito.png'
+import mosquitoAtlas from '../assets/sprites/creatures/mosquito_atlas.png'
 
 // Base class: a thing in the world with an AABB hitbox (x, y = top-left).
 class Entity {
