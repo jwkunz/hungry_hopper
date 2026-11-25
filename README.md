@@ -10,7 +10,7 @@ A side-scrolling swamp platformer made by the Kunzler family. You are a frog: ho
 |-------|------|
 | **[jwkunz.github.io/hungry_hopper](https://jwkunz.github.io/hungry_hopper/)** | The web game, always the latest `main` (deployed by GitHub Pages) |
 | **[Actions](https://github.com/jwkunz/hungry_hopper/actions/workflows/ci.yml)** | Open the latest successful **CI** run and download the `hungry-hopper-apk` artifact (Android debug APK) or `hungry-hopper-html` (single self-contained file) |
-| **[Releases](https://github.com/jwkunz/hungry_hopper/releases)** | `hungry-hopper-vX.Y.Z.html` and `hungry-hopper-vX.Y.Z-debug.apk`, published when a `v*` tag is pushed |
+| **[Releases](https://github.com/jwkunz/hungry_hopper/releases)** | `hungry-hopper-vX.Y.Z.html` and `hungry-hopper-vX.Y.Z-debug.apk`, published automatically for each new version |
 
 To install the APK, copy it to an Android phone or tablet and allow installs from your file manager or browser. It is a debug build, so Android may warn about it.
 
@@ -83,7 +83,7 @@ Pass `-PskipWebBuild` to reuse an existing `web/dist/hungry_hopper-v*.html`. The
 ## Continuous integration
 
 - **`ci.yml`** runs on pushes to `main`, tags and pull requests: checks the version files agree, runs the unit tests, builds the single HTML file (and verifies it has no external references), and builds the debug APK. Both files are uploaded as run artifacts.
-- **On a `v*` tag** it also publishes a GitHub release containing the HTML file and the APK.
+- **Releases:** after a green build it publishes a GitHub release (HTML file and APK) for the version in `VERSION`, if that version has no release yet. Pushing a `v*` tag does the same.
 - **`pages.yml`** runs the tests, builds the single HTML file and deploys it to GitHub Pages on every push to `main`.
 
 ## Versioning and releasing
@@ -94,13 +94,7 @@ node scripts/version.mjs set 3.1.0      # update VERSION, web/package.json, web/
 node scripts/version.mjs check          # fail if they disagree
 ```
 
-Add notes under `docs/build_notes/`, then commit and tag:
-
-```bash
-git tag v3.1.0 && git push origin v3.1.0
-```
-
-CI refuses to release if the tag doesn't match `VERSION`. The Android `versionName` and `versionCode` (`major*10000 + minor*100 + patch`) are derived from `VERSION`. The in-game version text comes from `web/package.json`.
+Add notes under `docs/build_notes/`, then commit and push to `main`: CI creates the release `vX.Y.Z` for the new version. (Pushing a `v*` tag by hand also works; CI refuses it if the tag doesn't match `VERSION`.) The Android `versionName` and `versionCode` (`major*10000 + minor*100 + patch`) are derived from `VERSION`. The in-game version text comes from `web/package.json`.
 
 ## Privacy
 
