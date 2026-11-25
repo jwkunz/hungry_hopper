@@ -38,6 +38,7 @@ export class Game {
     this.popups = []
     this.particles = [] // water bubbles
     this.bubble_ms = 0
+    this.last_cut_shot = -1
     this.elapsed_ms = 0
     this.accumulator = 0
     this.prevJump = false
@@ -133,6 +134,7 @@ export class Game {
     const x = this.checkpoint >= 0 ? this.level.checkpoints[this.checkpoint].x : this.level.spawn_x
     this.frog.respawn(x, this.level.ground_y - hb.h - 1)
     this.particles = []
+    this.last_cut_shot = -1
     for (const l of this.level.leaves) { l.dip = 0; l.y = l.y0 }
     this.entities = spawnEntities(this.level).filter((e) => this.checkpoint < 0 || e.cx > x)
     this._snapCamera()
@@ -218,14 +220,17 @@ export class Game {
       for (const e of this.entities) {
         if (!e.alive || !(e.edible || e.lickable)) continue
         if (!segmentHitsRect(seg.x1, seg.y1, seg.x2, seg.y2, e.hitbox, cfg.tongue_thickness / 2)) continue
-        const d = Math.abs(e.cx - seg.x1)
+        const d = Math.hypot(e.cx - seg.x1, e.cy - seg.y1)
         if (d < bestD) { best = e; bestD = d }
       }
       if (best) {
         if (best.lickable) {
-          if (best.lick(frog.shot_id)) {
+          // A shot cuts away at most ONE section: the nearest one it touched.
+          if (this.last_cut_shot !== frog.shot_id) {
+            this.last_cut_shot = frog.shot_id
+            best.lick()
             this._emit('cut')
-            if (!best.alive) this._addScore(cfg.points_briar, best.cx, best.ground_y - 30)
+            this._addScore(cfg.points_briar, best.cx, best.cy)
           }
         } else {
           this._eat(best)

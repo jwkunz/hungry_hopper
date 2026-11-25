@@ -40,10 +40,12 @@ export function createLevel1() {
   // Mud patches slow you down: [x, width]
   const mud = [[820, 170], [2000, 200], [3800, 200]].map(([x, w]) => ({ x, w }))
 
-  // Briars: [centre x, width, height]. Tall walls take three licks and shrink
-  // with each; low patches take one.
+  // Briars: [centre x, width, height]. Each is a grid of 36x60 sections that
+  // the tongue cuts away one at a time. Tall walls are 3 sections thick, so
+  // tunnelling through one at frog height takes three shots; low patches are
+  // hoppable.
   const briars = [
-    [950, 44, 340], [1750, 120, 56], [2680, 44, 340], [4050, 44, 340], [4900, 120, 56],
+    [950, 108, 340], [1750, 108, 56], [2680, 108, 340], [4050, 108, 340], [4900, 108, 56],
   ].map(([x, w, h]) => ({ x, w, h }))
 
   // Enemies and pickups: [centre x, height above ground, patrol range]

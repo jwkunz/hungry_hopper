@@ -4,7 +4,7 @@ A game made by the Kunzler family. You are a frog. Hop, aim, and eat.
 
 ## ▶ Play it now: https://jwkunz.github.io/hungry_hopper/
 
-**Current version: 2.4.2** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
+**Current version: 2.4.3** (React edition). See [PLAN.md](PLAN.md) for the roadmap. The original vanilla-JS game is
 version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 ## Controls
@@ -18,7 +18,7 @@ version 1.0.0 and lives on in git as the `v1.0.0` tag.
 
 **Rules:** eat enemies with the tongue, or land on top of them to stomp. Any
 other contact kills you instantly — unless you hold a **shield** from a glowing
-firefly, which absorbs one hit. Falling into a pit is always fatal. **Ponds** can be swum (JUMP kicks you up; with your head out it hops you onto land) and hide you from enemies — but you only have a few seconds of air. **Briars** kill on touch; lick them away with the tongue (tall thorn walls take three licks and shrink as you go). Mud slows you down; leaves sink a little under your weight. You have 3 lives and respawn at the last
+firefly, which absorbs one hit. Falling into a pit is always fatal. **Ponds** can be swum (JUMP kicks you up; with your head out it hops you onto land) and hide you from enemies — but you only have a few seconds of air. **Briars** kill on touch; cut them with the tongue — each shot removes just the one section it touches (aim at ground level to tunnel through a thorn wall in three shots; aim higher to open up a different spot). Mud slows you down; leaves sink a little under your weight. You have 3 lives and respawn at the last
 checkpoint flag; reach the red flag at the end to win. Tap the speaker button (or
 press **M**) to mute. Add `?debug` to the URL to see hitboxes.
 
@@ -109,6 +109,9 @@ inlines them. Sounds and music live in `src/assets/audio` as small MP3s
 so the single-file build stays around 2.7 MB.
 
 ## Changelog
+
+### 2.4.3
+- Briars are now made of sections. A tongue shot cuts only the section it touches (the nearest one), instead of shrinking the whole thicket. Thorn walls are 3 sections thick and 6 tall, so a frog-sized tunnel at ground level takes three shots; the rest of the wall stays. Cut sections crumble away; 10 points each.
 
 ### 2.4.2
 - Walk animation: the frog squashes and bobs in time with the distance it walks (faster = bigger bounce), and breathes a little when idle. Purely visual — the hitbox doesn't change. The frog sheet has no walk frames, so this is done in code (see `walk_*` in `config.js`).

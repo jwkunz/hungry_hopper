@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { CONFIG } from '../src/game/config.js'
 import { Game, GameState } from '../src/game/engine.js'
 import { createLevel1 } from '../src/game/level.js'
-import { Briar } from '../src/game/entities.js'
+import { BriarCell, spawnBriar } from '../src/game/entities.js'
 
 const none = { left: false, right: false, up: false, down: false, jump: false, eat: false }
 const mk = () => {
@@ -67,7 +67,7 @@ test('hiding underwater: enemies overlapping a submerged frog do nothing', () =>
   place(g, pond.x + pond.w / 2 - g.frog.w / 2, pond.floor_y - g.frog.h - 1)
   run(g, 300)
   assert.ok(g.frog.hidden)
-  const m = new (class extends Briar {})(0, 0, 10, 10) // placeholder to get entity base
+  const m = new BriarCell(0, 0, 10, 10, 0, 0, 0) // just to get an entity to repurpose
   m.kind = 'enemy'; m.lickable = false
   Object.assign(m, { cx: g.frog.x + g.frog.w / 2, cy: g.frog.y + g.frog.h / 2, w: 40, h: 30, alive: true, update() {}, draw() {} })
   g.entities = [m]
@@ -102,45 +102,75 @@ test('mud slows walking', () => {
   assert.ok(slow < normal * 0.75, `mud ${slow.toFixed(0)} vs ground ${normal.toFixed(0)}`)
 })
 
-test('briar: lethal on contact; shield absorbs it; one lick per tongue shot; walls shrink', () => {
-  const lv = createLevel1()
-  const b = new Briar(500, lv.ground_y, 44, 340)
-  assert.equal(b.max_hp, 3)
-  assert.ok(b.lick(1)); assert.ok(!b.lick(1), 'same shot does not double count')
-  assert.ok(Math.abs(b.h - 340 * (2 / 3)) < 1e-6)
-  assert.ok(b.lick(2)); assert.ok(b.h < 160, 'now low enough to hop over')
-  assert.ok(b.alive)
-  assert.ok(b.lick(3)); assert.ok(!b.alive)
+test('briar thickets are grids of sections; tall walls are 3 sections thick', () => {
+  const gy = createLevel1().ground_y
+  const wall = spawnBriar({ x: 500, w: 108, h: 340 }, gy)
+  assert.equal(wall.length, 3 * 6, '3 columns x 6 rows')
+  const patch = spawnBriar({ x: 500, w: 108, h: 56 }, gy)
+  assert.equal(patch.length, 3)
+  // sections tile the thicket exactly: bottom row sits on the ground, no gaps
+  const bottom = wall.filter((c) => c.row === 0)
+  assert.ok(bottom.every((c) => Math.abs(c.y + c.h - gy) < 1e-6))
+  const xs = bottom.map((c) => c.x).sort((a, b) => a - b)
+  assert.ok(Math.abs(xs[0] - (500 - 54)) < 1e-6)
+  assert.ok(Math.abs(bottom[0].w * 3 - 108) < 1e-6)
+  assert.ok(Math.abs(Math.min(...wall.map((c) => c.y)) - (gy - 340)) < 1e-6, 'top of the wall')
+})
 
+test('briar sections are lethal on contact; a shield absorbs it', () => {
   const g = mk()
-  const w = new Briar(g.frog.x + g.frog.w + 5, g.level.ground_y, 44, 340)
-  g.entities = [w]
+  const sec = (g2) => new BriarCell(g2.frog.x + g2.frog.w, g2.level.ground_y - 30, 36, 60, 0, 0, g2.level.ground_y)
+  g.entities = [sec(g)]
   run(g, 100)
-  assert.equal(g.state, GameState.DYING, 'touching a briar kills')
+  assert.equal(g.state, GameState.DYING)
 
   const g2 = mk()
   g2.frog.shield = true
-  g2.entities = [new Briar(g2.frog.x + g2.frog.w + 5, g2.level.ground_y, 44, 340)]
+  g2.entities = [sec(g2)]
   run(g2, 100)
   assert.equal(g2.state, GameState.PLAY)
-  assert.equal(g2.frog.shield, false, 'shield absorbed the briar hit')
+  assert.equal(g2.frog.shield, false)
 })
 
-test('tongue cuts through a briar wall in three shots', () => {
+test('each tongue shot cuts exactly one section (the nearest); you can tunnel through a wall in 3 shots', () => {
   const g = mk()
-  const wall = new Briar(900, g.level.ground_y, 44, 340)
-  g.entities = [wall]
-  place(g, wall.x - 175, g.level.ground_y - g.frog.h - 1)
+  const gy = g.level.ground_y
+  const wall = spawnBriar({ x: 900, w: 108, h: 340 }, gy)
+  g.entities = [...wall]
+  place(g, 900 - 54 - 190, gy - g.frog.h - 1)
   g.frog.is_right = true
   run(g, 100)
-  let shots = 0
-  while (wall.alive && shots < 6) {
+  const alive = () => g.entities.filter((e) => e.alive).length
+  assert.equal(alive(), 18)
+  for (let shot = 1; shot <= 3; shot++) {
     run(g, 160, { ...none, eat: true })
-    run(g, 900) // let the tongue finish and reload
-    shots++
-    assert.equal(g.state, GameState.PLAY, 'frog never touched the briar')
+    run(g, 900) // finish + reload
+    assert.equal(alive(), 18 - shot, `after shot ${shot} exactly one more section is gone`)
+    assert.equal(g.state, GameState.PLAY)
   }
-  assert.ok(!wall.alive, 'wall cut down')
-  assert.equal(shots, 3)
-  assert.ok(g.score >= CONFIG.points_briar)
+  // Row 0 (frog height) is now clear all the way through; everything above remains
+  const cleared = wall.filter((c) => !c.alive)
+  assert.ok(cleared.every((c) => c.row === 0), 'only the ground row was cut')
+  assert.ok(cleared.map((c) => c.col).sort().join() === '0,1,2', 'all three columns of that row')
+  // ...so the frog can now walk straight through the wall without being hurt
+  run(g, 3500, { ...none, right: true }) // (this wall sits in mud, so it is slow going)
+  assert.equal(g.state, GameState.PLAY, 'walked through the tunnel unharmed')
+  assert.ok(g.frog.x > 900 + 54, 'came out the other side')
+  assert.ok(g.score >= 3 * CONFIG.points_briar)
+})
+
+test('aiming higher cuts a different section of the wall', () => {
+  const g = mk()
+  const gy = g.level.ground_y
+  const wall = spawnBriar({ x: 900, w: 108, h: 340 }, gy)
+  g.entities = [...wall]
+  place(g, 900 - 54 - 190, gy - g.frog.h - 1)
+  g.frog.is_right = true
+  run(g, 100)
+  run(g, 300, { ...none, up: true }) // aim up ~27°
+  run(g, 160, { ...none, eat: true })
+  run(g, 900)
+  const cut = wall.filter((c) => !c.alive)
+  assert.equal(cut.length, 1)
+  assert.ok(cut[0].row >= 1, `cut a higher row (${cut[0].row})`)
 })

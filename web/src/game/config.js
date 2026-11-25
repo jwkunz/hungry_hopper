@@ -65,7 +65,7 @@ export const CONFIG = {
   points_eat: 200,
   points_stomp: 100,
   points_pickup: 50,
-  points_briar: 25,
+  points_briar: 10, // per section cut
   active_margin: 500, // enemies only move within this distance of the screen
 
   // Camera
