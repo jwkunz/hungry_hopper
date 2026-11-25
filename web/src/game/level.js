@@ -12,7 +12,8 @@ export function createLevel1() {
     [1400, 900],
     [2500, 800],
     [3500, 900],
-    [4600, 1000],
+    [4600, 350],
+    [5110, 490],
   ].map(([x, w]) => ({ x, w }))
 
   // Ponds fill some gaps: 1200-1400 and 3300-3500. (2300-2500 and 4400-4600
@@ -20,6 +21,7 @@ export function createLevel1() {
   const ponds = [
     [1200, 200],
     [3300, 200],
+    [4950, 160], // boss arena puddle
   ].map(([x, w]) => ({ x, w, surface_y: GROUND_Y + 14, floor_y: GROUND_Y + 112 }))
 
   // One-way leaf platforms: [x, height above ground, width]. They dip a few
@@ -33,6 +35,8 @@ export function createLevel1() {
     [3410, 75, 110],
     [3900, 110, 150], [4120, 210, 140], [4320, 110, 140],
     [4510, 75, 110],
+    // boss arena
+    [4780, 120, 150], [5030, 215, 140], [5250, 120, 150], [5440, 225, 110],
   ].map(([x, above, w]) => ({
     x, w, y: GROUND_Y - above, y0: GROUND_Y - above, h: LEAF_THICKNESS, dip: 0, oneWay: true, kind: 'leaf',
   }))
@@ -45,27 +49,27 @@ export function createLevel1() {
   // cutting through a tall one at frog height takes one shot; low patches are
   // hoppable.
   const briars = [
-    [950, 36, 340], [1750, 36, 56], [2680, 36, 340], [4050, 36, 340], [4900, 36, 56],
+    [950, 36, 340], [1750, 36, 56], [2680, 36, 340], [4050, 36, 340],
   ].map(([x, w, h]) => ({ x, w, h }))
 
   // Enemies and pickups: [centre x, height above ground, patrol range]
   const mosquitos = [
     [700, 130, 140], [2020, 270, 120], [2750, 120, 160],
-    [4000, 130, 160], [5000, 180, 120],
+    [4000, 130, 160],
   ].map(([x, above, range]) => ({ x, y: GROUND_Y - above, range }))
   // Bestiary (M5): [x, extra]. Bats/owls: height above ground. Walkers: patrol range.
   const bestiary = {
     bats: [[1350, 250], [4250, 240]],
     moles: [[1100], [4300]],
     beetles: [[620, 100], [4420, 110]],
-    centipedes: [[3080, 120], [5120, 100]],
-    pillbugs: [[1950, 90], [5260, 90]],
+    centipedes: [[3080, 120]],
+    pillbugs: [[1950, 90]],
     owls: [[2250, 285]],
     cranes: [[3900, 90]],
   }
   // Shield fireflies: [centre x, height above ground]
   const fireflies = [
-    [870, 255], [1990, 265], [3065, 245], [4190, 255],
+    [870, 255], [1990, 265], [3065, 245], [4190, 255], [5190, 270],
   ].map(([x, above]) => ({ x, y: GROUND_Y - above }))
 
   // Checkpoints (lily-pad flags on the ground): x position
@@ -94,6 +98,9 @@ export function createLevel1() {
     mosquitos,
     fireflies,
     bestiary,
+    // Final boss: lives in the arena at the end of the level. The arena locks
+    // the camera to [x0, x0+view] once you pass `trigger`.
+    boss: { x: 5300, y: GROUND_Y - 330, arena: { x0: 4640, x1: 5600, trigger: 4820 } },
     solids,
     pondAt: (cx) => ponds.find((p) => cx > p.x && cx < p.x + p.w) ?? null,
     mudAt: (cx) => mud.some((m) => cx >= m.x && cx <= m.x + m.w),

@@ -99,10 +99,10 @@ Mole (pops from ground) · bat (swoops, hangs) · centipede (walls/ceilings) ·
 beetle (armoured: belly-tongue or stomp) · pill bug (rolls) · more mosquitos
 (stinger wind-up/strike) · other swamp creatures.
 
-### M6 — Fly Boss
-- [ ] Large erratic flyer, two glowing eyes as weak points
-- [ ] 3 eye hits to kill, behaviour changes after each hit (speed, minion waves, hazards)
-- [ ] Mosquito minion spawns; arena with leaves + puddles
+### M6 — Fly Boss (done in 2.7.0)
+- [x] Large erratic flyer, two glowing eyes as weak points
+- [x] 3 eye hits to kill, behaviour changes after each hit (speed, minion waves, hazards)
+- [x] Mosquito minion spawns; arena with leaves + puddles
 
 ### M7 — Tongue traversal & power-ups
 - [ ] Grapple/swing from branches; pull light objects; spit captured enemies

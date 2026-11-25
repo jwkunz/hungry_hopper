@@ -188,6 +188,28 @@ export function drawHud(ctx, game) {
     ctx.strokeText('◉ SHIELD', cfg.view_w - 72, 54)
     ctx.fillText('◉ SHIELD', cfg.view_w - 72, 54)
   }
+  // Boss health: one eye per hit point, shown once the fight has begun
+  const boss = game.boss
+  if (boss && game.arena_active && boss.phase !== 'dormant' && !game.boss_defeated) {
+    const cx = cfg.view_w / 2
+    ctx.textAlign = 'center'
+    ctx.font = 'bold 13px system-ui, sans-serif'
+    ctx.lineWidth = 3
+    ctx.fillStyle = '#ffd0d6'
+    ctx.strokeText('FLY BOSS', cx, 66)
+    ctx.fillText('FLY BOSS', cx, 66)
+    for (let i = 0; i < boss.max_hp; i++) {
+      const x = cx + (i - (boss.max_hp - 1) / 2) * 30
+      ctx.beginPath(); ctx.arc(x, 82, 10, 0, Math.PI * 2)
+      ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fill()
+      if (i < boss.hp) {
+        ctx.beginPath(); ctx.arc(x, 82, 7, 0, Math.PI * 2)
+        ctx.fillStyle = '#e0334d'; ctx.fill()
+        ctx.beginPath(); ctx.arc(x - 2, 80, 2, 0, Math.PI * 2)
+        ctx.fillStyle = 'rgba(255,255,255,.7)'; ctx.fill()
+      }
+    }
+  }
   ctx.restore()
 }
 

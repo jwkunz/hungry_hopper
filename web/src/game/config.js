@@ -74,6 +74,8 @@ export const CONFIG = {
   spawn_clear_behind: 150,
   spawn_clear_ahead: 380,
   spawn_invuln_ms: 1500,
+  points_boss_hit: 500,
+  points_boss_kill: 2000,
   aggro_range: 480,
   chase_k: 24000,
   chase_min_speed: 32,

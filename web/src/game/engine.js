@@ -148,6 +148,8 @@ export class Game {
   }
 
   _newRun() {
+    this.boss_defeated = false
+    this.arena_active = false
     this.score = 0
     this.lives = this.cfg.start_lives
     this.checkpoint = -1 // index into level.checkpoints
@@ -170,8 +172,11 @@ export class Game {
     const lo = x - this.cfg.spawn_clear_behind
     const hi = x + this.cfg.spawn_clear_ahead
     this.entities = spawnEntities(this.level).filter(
-      (e) => (this.checkpoint < 0 || e.cx > x) && !(e.cx > lo && e.cx < hi && !(e instanceof Firefly)),
+      (e) => (this.checkpoint < 0 || e.cx > x) && !(e.cx > lo && e.cx < hi && !(e instanceof Firefly)) &&
+        !(e.is_boss && this.boss_defeated),
     )
+    this.boss = this.entities.find((e) => e.is_boss) ?? null
+    this.arena_active = false // the fight restarts (boss at full health) after a death
     if (this.deaths > 0) this.frog.invuln_ms = this.cfg.spawn_invuln_ms // grace after a death
     this._snapCamera()
   }
@@ -248,6 +253,25 @@ export class Game {
       return this._die()
     }
 
+    // Tongue vs boss weak point (the glowing eye)
+    {
+      const tseg = frog.tongueSegment()
+      if (tseg) {
+        for (const e of this.entities) {
+          const r = e.weakRect?.()
+          if (!r || !segmentHitsRect(tseg.x1, tseg.y1, tseg.x2, tseg.y2, r, cfg.tongue_thickness / 2)) continue
+          frog.retractTongue()
+          if (e.eyeHit(this)) {
+            this._addScore(e.hp > 0 ? cfg.points_boss_hit : cfg.points_boss_kill, r.x + r.w / 2, r.y)
+          } else if (this.last_deflect_shot !== frog.shot_id) {
+            this.last_deflect_shot = frog.shot_id
+            this._emit('cut')
+          }
+          break
+        }
+      }
+    }
+
     // Tongue: eat enemies, cut briars, grab pickups (nearest thing wins)
     const seg = frog.tongueSegment()
     if (seg) {
@@ -315,7 +339,20 @@ export class Game {
         this._emit('checkpoint')
       }
     })
-    if (cx > level.goal_x) return this._complete()
+    // Boss arena: entering it locks the camera and shuts the door behind you
+    const arena = level.boss?.arena
+    if (arena && this.boss && !this.boss_defeated) {
+      if (!this.arena_active && cx > arena.trigger) {
+        this.arena_active = true
+        this._popup(arena.x0 + cfg.view_w / 2, level.ground_y - 200, 'THE FLY BOSS!')
+      }
+      if (this.arena_active) {
+        const p = frog.physics
+        if (p.p_x < arena.x0 + 10) { p.p_x = arena.x0 + 10; p.v_x = Math.max(0, p.v_x) }
+        if (p.p_x + frog.w > arena.x1 - 10) { p.p_x = arena.x1 - 10 - frog.w; p.v_x = Math.min(0, p.v_x) }
+      }
+    }
+    if (cx > level.goal_x && (!this.boss || this.boss_defeated)) return this._complete()
 
     if (frog.y > level.height + 120) this._die()
   }
@@ -461,6 +498,7 @@ export class Game {
 
   _cameraTarget() {
     const { cfg, level, frog } = this
+    if (this.arena_active && level.boss) return Math.min(level.boss.arena.x0, level.width - cfg.view_w)
     const t = frog.x + frog.w / 2 - cfg.view_w * cfg.camera_lead
     return Math.max(0, Math.min(t, level.width - cfg.view_w))
   }

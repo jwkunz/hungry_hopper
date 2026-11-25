@@ -78,6 +78,7 @@ test('checkpoints: reaching one sets the respawn point; cleared things behind it
 test('reaching the goal completes the level with a life bonus and saves nothing weird', () => {
   const g = mk()
   start(g)
+  g.boss_defeated = true // the boss gates the goal
   g.frog.physics.p_x = g.level.goal_x + 10
   g.frog.physics.p_y = g.level.ground_y - g.frog.h - 1
   run(g, 100)
