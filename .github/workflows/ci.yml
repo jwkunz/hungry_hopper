@@ -50,7 +50,7 @@ jobs:
           if-no-files-found: error
 
   android:
-    name: Android debug APK
+    name: Android release APK
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,16 +64,34 @@ jobs:
           distribution: temurin
           java-version: 21
       - uses: gradle/actions/setup-gradle@v4
+      - name: Load the release signing key
+        if: github.event_name != 'pull_request'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/release.jks"
+          echo "RELEASE_STORE_FILE=$RUNNER_TEMP/release.jks" >> "$GITHUB_ENV"
       - name: Build APK (Gradle builds the web page the app bundles)
-        run: ./gradlew :app:assembleDebug --no-daemon
+        env:
+          RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          RELEASE_KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease --no-daemon
         working-directory: Android
       - name: Check the APK bundles the game page at assets/index.html
-        run: unzip -l Android/app/build/outputs/apk/debug/app-debug.apk | grep -E ' assets/index.html$'
-      - run: cp Android/app/build/outputs/apk/debug/app-debug.apk "$RUNNER_TEMP/hungry-hopper-debug.apk"
+        run: unzip -l Android/app/build/outputs/apk/release/app-release*.apk | grep -E ' assets/index.html$'
+      - name: Collect the APK and check its signature
+        run: |
+          apk=$(ls Android/app/build/outputs/apk/release/app-release*.apk)
+          if [ "$GITHUB_EVENT_NAME" != pull_request ]; then
+            "$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)/apksigner" verify --print-certs "$apk"
+          fi
+          cp "$apk" "$RUNNER_TEMP/hungry-hopper.apk"
       - uses: actions/upload-artifact@v4
         with:
           name: hungry-hopper-apk
-          path: ${{ runner.temp }}/hungry-hopper-debug.apk
+          path: ${{ runner.temp }}/hungry-hopper.apk
           if-no-files-found: error
 
   release:
@@ -100,7 +118,7 @@ jobs:
             exit 0
           fi
           mv artifacts/hungry_hopper.html "hungry-hopper-$TAG.html"
-          mv artifacts/hungry-hopper-debug.apk "hungry-hopper-$TAG-debug.apk"
+          mv artifacts/hungry-hopper.apk "hungry-hopper-$TAG.apk"
           gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --title "Hungry Hopper $TAG" --generate-notes \
             "hungry-hopper-$TAG.html#Hungry Hopper (single HTML file)" \
-            "hungry-hopper-$TAG-debug.apk#Hungry Hopper (Android debug APK)"
+            "hungry-hopper-$TAG.apk#Hungry Hopper (Android APK)"

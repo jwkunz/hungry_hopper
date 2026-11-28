@@ -9,10 +9,10 @@ A side-scrolling swamp platformer made by the Kunzler family. You are a frog: ho
 | Where | What |
 |-------|------|
 | **[jwkunz.github.io/hungry_hopper](https://jwkunz.github.io/hungry_hopper/)** | The web game, always the latest `main` (deployed by GitHub Pages) |
-| **[Actions](https://github.com/jwkunz/hungry_hopper/actions/workflows/ci.yml)** | Open the latest successful **CI** run and download the `hungry-hopper-apk` artifact (Android debug APK) or `hungry-hopper-html` (single self-contained file) |
-| **[Releases](https://github.com/jwkunz/hungry_hopper/releases)** | `hungry-hopper-vX.Y.Z.html` and `hungry-hopper-vX.Y.Z-debug.apk`, published automatically for each new version |
+| **[Actions](https://github.com/jwkunz/hungry_hopper/actions/workflows/ci.yml)** | Open the latest successful **CI** run and download the `hungry-hopper-apk` artifact (Android APK) or `hungry-hopper-html` (single self-contained file) |
+| **[Releases](https://github.com/jwkunz/hungry_hopper/releases)** | `hungry-hopper-vX.Y.Z.html` and `hungry-hopper-vX.Y.Z.apk`, published automatically for each new version |
 
-To install the APK, copy it to an Android phone or tablet and allow installs from your file manager or browser. It is a debug build, so Android may warn about it.
+To install the APK, copy it to an Android phone or tablet and allow installs from your file manager or browser. Versions up to 3.1.1 were debug builds, so uninstall one of those before installing a newer version.
 
 ## Game features
 
@@ -78,11 +78,11 @@ cd Android
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 ```
 
-Pass `-PskipWebBuild` to reuse an existing `web/dist/hungry_hopper-v*.html`. The APK is a debug build; a Play Store upload would need a signed release build, which is not set up here.
+Pass `-PskipWebBuild` to reuse an existing `web/dist/hungry_hopper-v*.html`. CI signs the release APK with the key in the repository's `RELEASE_*` secrets. A local `assembleRelease` without them produces an unsigned APK.
 
 ## Continuous integration
 
-- **`ci.yml`** runs on pushes to `main`, tags and pull requests: checks the version files agree, runs the unit tests, builds the single HTML file (and verifies it has no external references), and builds the debug APK. Both files are uploaded as run artifacts.
+- **`ci.yml`** runs on pushes to `main`, tags and pull requests: checks the version files agree, runs the unit tests, builds the single HTML file (and verifies it has no external references), and builds the release APK. Both files are uploaded as run artifacts.
 - **Releases:** after a green build it publishes a GitHub release (HTML file and APK) for the version in `VERSION`, if that version has no release yet. Pushing a `v*` tag does the same.
 - **`pages.yml`** runs the tests, builds the single HTML file and deploys it to GitHub Pages on every push to `main`.
 
